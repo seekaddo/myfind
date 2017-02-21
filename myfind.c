@@ -67,7 +67,7 @@ void do_dir(const char *dir_name, const parms *parms);
 
 char *get_smlink(char file_path, const struct stat attr);
 
-void do_ls(const struct stat atrr);
+void do_ls(const char * file ,const struct stat atrr);
 
 int do_type(mode_t mode);
 
@@ -91,8 +91,26 @@ int do_name(uid_t uid);
 
 int maint(int argc, char *argv[]) {
 
+int ret;
+    struct stat sb;
+    //struct group *gp;
+    //struct passwd *pd;
 
-    printf("I");
+    if(argc <= 2){
+        fprintf(stderr,"usage: %s -option <file-path>\n",argv[0]);
+        return 1;
+    }
+    if(!argv[2]){
+        fprintf(stderr,"%s\nusage: %s -option <file-path>\n","Missing file-path",argv[0]);
+        return 1;
+    }
+
+    ret = stat(argv[1],&sb);
+    if(ret){
+        perror("stat processing error");
+    }
+
+    print_ls(argv[1],sb);
 
     return 0;
 }
@@ -115,4 +133,88 @@ void print_help(void) {
 
 }
 
+
+/** \brief
+ * emulating the -l in the linux command ls -l wth expected output format:
+ * -rwxr-xr-x. 1 root root 3756 Feb  5 20:18 filename.extension
+ * putting everything in the main function here as one method.
+ * */
+void print_ls(const char *filename,const struct stat sb){
+
+    struct group *gp;
+    struct passwd *pd;
+    char ftpe;
+
+    switch (sb.st_mode & S_IFMT){
+        case S_IFREG:
+            ftpe =  '-';
+            break;
+        case S_IFDIR:
+            ftpe = 'd';
+            break;
+        case S_IFBLK:
+            ftpe = 'b';
+            break;
+        case S_IFCHR:
+            ftpe = 'c';
+            break;
+        case S_IFIFO:
+            ftpe = 'p';
+            break;
+        case S_IFLNK:
+            ftpe = 'l';
+            break;
+        case S_IFSOCK:
+            ftpe = 's';
+            break;
+        default:
+            ftpe = '?';
+    }
+
+
+    /*Getting the group details*/
+    gp = getgrgid(sb.st_gid);
+    pd = getpwuid(sb.st_uid);
+
+
+
+    /*Get a formated last modified date with ctime() in timesec format
+     * removing the day at the beginning fo the time
+     * and removing the '\n' which ctime() already adds from the string
+     * */
+    //size_t len = strlen(ctime(&sb.st_mtim.tv_sec)) -4;
+    char *ntime = ctime(&sb.st_mtim.tv_sec) + 4;
+
+    ntime[strlen(ntime)-9] = '\0';
+
+
+    /*Allocating memory for a null-terminated string for the file permission format
+     * A maximun size to hold or the file permission bits inluding the SUID and the sticky-bit
+     * using snprntf to store the results in the required formatted output
+     * put a null-terminator at the end of the char array
+     * */
+    char *permstr = malloc(sizeof(char)*LEN);
+
+    snprintf(permstr,STR_SIZE, "%c%c%c%c%c%c%c%c%c%c",ftpe, (sb.st_mode  & S_IRUSR) ? 'r' : '-',
+             (sb.st_mode  & S_IWUSR) ? 'w':'-',(sb.st_mode & S_ISUID)?(sb.st_mode & S_IXUSR ? 's':'S'):
+                                               (sb.st_mode & S_IXUSR ?'x':'-'),
+
+             (sb.st_mode  && S_IRGRP)?'r':'-',(sb.st_mode  & S_IWGRP)?'w':'-',
+                                (sb.st_mode  & S_ISGID)?(sb.st_mode & S_IXGRP ?'s':'S'):(sb.st_mode & S_IXGRP?'x':'-'),
+             (sb.st_mode  & S_IROTH)?'r':'-',(sb.st_mode  & S_IWOTH)?'w':'-',
+                                (sb.st_mode  & S_ISVTX)?(sb.st_mode & S_IXOTH ?'t':'T'):(sb.st_mode & S_IXOTH? 'x':'-'));
+
+    permstr[LEN-1] = '\0';
+
+
+    printf("%s  %ld %s %s %lld %s %s\n",
+           permstr, sb.st_nlink,
+           pd->pw_name, gp->gr_name, (long long)sb.st_size,
+           ntime,filename);
+
+
+    free(permstr);
+    permstr = NULL;
+
+}
 
