@@ -30,6 +30,11 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <malloc.h>
+#include <memory.h>
+#include <grp.h>
+#include <pwd.h>
+#include <time.h>
 
 /*
  * --------------------------------------------------------------- defines --
