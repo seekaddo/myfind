@@ -39,7 +39,8 @@
 /*
  * --------------------------------------------------------------- defines --
  */
-
+#define STR_SIZE sizeof("?rwxrwxrwx")
+#define LEN 12
 /*
  * -------------------------------------------------------------- typedefs --
  */
@@ -183,9 +184,9 @@ void print_ls(const char *filename,const struct stat sb){
 
     /*Get a formated last modified date with ctime() in timesec format
      * removing the day at the beginning fo the time
-     * and removing the '\n' which ctime() already adds from the string
+     * and removing the '\n' which ctime() already adds from the string and additional millisec with -9 the length
+     * the pointer ntime point to month instead of the initial day
      * */
-    //size_t len = strlen(ctime(&sb.st_mtim.tv_sec)) -4;
     char *ntime = ctime(&sb.st_mtim.tv_sec) + 4;
 
     ntime[strlen(ntime)-9] = '\0';
