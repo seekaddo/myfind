@@ -98,8 +98,6 @@ int maint(int argc, char *argv[]) {
 
 int ret;
     struct stat sb;
-    //struct group *gp;
-    //struct passwd *pd;
 
     if(argc <= 2){
         fprintf(stderr,"usage: %s -option <file-path>\n",argv[0]);
