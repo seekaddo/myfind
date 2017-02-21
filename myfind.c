@@ -186,6 +186,8 @@ void print_ls(const char *filename,const struct stat sb){
      * removing the day at the beginning fo the time
      * and removing the '\n' which ctime() already adds from the string and additional millisec with -9 the length
      * the pointer ntime point to month instead of the initial day
+     * PN: ctime() is a MT-Unsafe functions, that means is not safe to call/use in a multithreaded programm
+     * in a multithreaded programm strftime() is recommended
      * */
     char *ntime = ctime(&sb.st_mtim.tv_sec) + 4;
 
