@@ -3,7 +3,7 @@ A GNU-like find command
 
 
 This is a Uni Semester Porject from a group of two people. My partner and I are implenting or emulating a GNU-like Find command in linux. This is not to replace the GNU Find command. Imporve our linux Programming skills for the semester.
-(Project Details and structure)[https://cis.technikum-wien.at/documents/bic/2/bes/semesterplan/lu/beispiel1.html]
+[Project Details and structure](https://cis.technikum-wien.at/documents/bic/2/bes/semesterplan/lu/beispiel1.html)
 
 
 
