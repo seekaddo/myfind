@@ -82,6 +82,7 @@ void print_ls(const char *file, const struct stat atrr);
 int do_type(mode_t mode);
 
 int do_name(uid_t uid);
+void clean_parms(parms *pm);
 
 
 /**
@@ -113,15 +114,23 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    //parms p = process_parms(argc,argv);
+    parms p = process_parms(argc,argv);
 
 
-    ret = stat(argv[1], &sb);
-    if (ret) {
-        perror("stat processing error");
+    if(p.help){
+        print_help();
+        clean_parms(&p);
+        return 0;
     }
 
-    print_ls(argv[1], sb);
+    if(p.ls){
+        ret = stat(argv[1], &sb);
+        if (ret) {
+            perror("stat processing error");
+        }
+
+        print_ls(argv[1], sb);
+    }
 
     return 0;
 }
@@ -195,7 +204,7 @@ parms process_parms(const int len, char **pms) {
             p.help = 1;
 
             continue;
-            
+
         } else
 
         if (strcmp(pms[i], "-ls") == 0) {
@@ -350,6 +359,13 @@ void print_ls(const char *filename, const struct stat sb) {
 
     free(permstr);
     permstr = NULL;
+
+}
+
+void clean_parms(parms *pm){
+    free(pm->user);
+    free(pm->name);
+    free(pm->spath);
 
 }
 
