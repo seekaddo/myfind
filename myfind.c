@@ -35,6 +35,8 @@
 #include <grp.h>
 #include <pwd.h>
 #include <time.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 /*
  * --------------------------------------------------------------- defines --
@@ -51,8 +53,8 @@ typedef struct _params {
     int print;
     char f_type;
     int ls;
-    char *user;
-    unsigned long usr_id;
+    char *user;                     //	<name>/<uid> expt: user name can be a number too
+    unsigned long user_id;
     char *name;
 
 } parms;
@@ -71,13 +73,16 @@ void do_file(const char *file_name, const parms *parms);
 
 void do_dir(const char *dir_name, const parms *parms);
 
+parms process_parms(const int len, char **pms);
+
 char *get_smlink(char file_path, const struct stat attr);
 
-void do_ls(const char * file ,const struct stat atrr);
+void print_ls(const char * file ,const struct stat atrr);
 
 int do_type(mode_t mode);
 
 int do_name(uid_t uid);
+
 
 
 /**
@@ -95,7 +100,7 @@ int do_name(uid_t uid);
   */
 
 
-int maint(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
 int ret;
     struct stat sb;
@@ -109,6 +114,9 @@ int ret;
         return 1;
     }
 
+    //parms p = process_parms(argc,argv);
+
+
     ret = stat(argv[1],&sb);
     if(ret){
         perror("stat processing error");
@@ -119,7 +127,8 @@ int ret;
     return 0;
 }
 
-/*\brief This display all the necessary help information for the programm
+/**
+ * \brief This display all the necessary help information for the programm
  * when user specify -help for the program "myfind"
  * Default:displays for  inproper command options
  * */
@@ -136,6 +145,134 @@ void print_help(void) {
                    "");
 
 }
+
+
+
+
+
+/**
+ * \brief This process all the passed in parameters from the *argv[]
+ * and set status for the reqired parameters in the struct.
+ * If in any case a wrong parameter is found EXIT_FAILURE otherwise continue to
+ * the next parameter
+ * */
+
+parms process_parms(const int len, char **pms){
+
+    parms p ={0};        // to prevent uninitialise message
+
+    if(len <= 1) return p;
+
+
+
+    for (int i = 1; (i <= len) && *pms ; ++i) {
+
+        if((p.spath == NULL) && *(pms+i)[strlen(pms[i])-1] != '-'){
+            size_t l = strlen(pms[i] + 1);
+            if(*(pms+i)[strlen(pms[i])-1] != '/'){
+                p.spath = malloc(sizeof(char) * l +1);
+                snprintf(p.spath, sizeof(l+1),"%s%c",pms[i],'/');
+                p.spath[l+1] = '\0';
+
+
+            } else {
+                p.spath = malloc(sizeof(char) * l);
+                strcpy(p.spath,pms[i]);
+                p.spath[l+1] = '\0';
+
+            }
+
+            continue;
+        }
+
+
+        if(strcmp(pms[i],"-name") == 0){
+            size_t l = strlen(pms[i]);
+            p.name = malloc(sizeof(char) * l + 1);
+            strcpy(p.name,pms[i]);
+            p.name[l+1] = '\0';
+
+            continue;
+        }
+
+        if(strcmp(pms[i],"-help")){
+            p.help = 1;
+
+            continue;
+        }
+
+        if(strcmp(pms[i],"-print")){
+            p.help = 1;
+
+            continue;
+        }
+
+        if(strcmp(pms[i],"-ls")){
+            p.ls = 1;
+
+            continue;
+        }
+
+        if(strcmp(pms[i],"-type")){
+            char f = *(pms[++i]);
+            if (f == 'f' || f =='b' || f == 'c' ||
+                f == 'd' ||f == 's' || f == 'p'|| f == 'l'){
+                p.f_type = f;
+                continue;
+            } else{
+                printf("myfind: Unknown argument to %s: %c",pms[i],f);
+            }
+
+        }
+
+
+        /*First confirm the user in the passwd database
+         * getpwnam return NULL if no match is found in the database
+         * if no match is found then check if is a digit and extract it as user_id
+         * otherwise report error and exit failure
+         * This check cases where in the passwd database a username is a number
+         * */
+        if(strcmp(pms[i],"-user")){
+
+            struct passwd *pd;
+            if(pms[i+1]){
+                p.user = strcpy(malloc(sizeof(strlen(pms[i+1]))),pms[i+1]);
+                if((pd = getpwnam(pms[i+1]))){
+                    p.user_id = pd->pw_uid;
+                    continue;
+                } else if(isdigit(pms[i][0])){
+                    sscanf(p.user,"%lu",&p.user_id);
+                    continue;
+                } else{
+                    printf("myfind: `%s` is not a the name of a known user ",pms[i+1]);
+                    exit(EXIT_FAILURE);
+                }
+
+
+            } else{
+
+                printf("myfind: missing argument to `%s`",pms[i]);
+                exit(EXIT_FAILURE);
+
+            }
+
+
+        }
+
+
+
+
+    }
+
+    return p;
+
+
+}
+
+
+
+
+
 
 
 /** \brief
