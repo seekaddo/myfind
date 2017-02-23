@@ -171,26 +171,41 @@ parms process_parms(const int len, char **pms) {
             p.spath[l + 1] = '\0';
 
             continue;
-        } else if (strcmp(pms[i], "-name") == 0) {
+        } else
+
+
+        if (strcmp(pms[i], "-name") == 0) {
             size_t l = strlen(pms[i]);
             p.name = malloc(sizeof(char) * l + 1);
             strcpy(p.name, pms[i]);
             p.name[l + 1] = '\0';
 
             continue;
-        } else if (strcmp(pms[i], "-help") == 0) {
+        } else
+
+
+        if (strcmp(pms[i], "-help") == 0) {
             p.help = 1;
 
             continue;
-        } else if (strcmp(pms[i], "-print") == 0) {
+        } else
+
+
+        if (strcmp(pms[i], "-print") == 0) {
             p.help = 1;
 
             continue;
-        } else if (strcmp(pms[i], "-ls") == 0) {
+            
+        } else
+
+        if (strcmp(pms[i], "-ls") == 0) {
             p.ls = 1;
 
             continue;
-        } else if (strcmp(pms[i], "-type") == 0) {
+        } else
+
+
+        if (strcmp(pms[i], "-type") == 0) {
             char f = *(pms[i + 1]);
             if (f == 'f' || f == 'b' || f == 'c' ||
                 f == 'd' || f == 's' || f == 'p' || f == 'l') {
