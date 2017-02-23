@@ -77,12 +77,11 @@ parms process_parms(const int len, char **pms);
 
 char *get_smlink(char file_path, const struct stat attr);
 
-void print_ls(const char * file ,const struct stat atrr);
+void print_ls(const char *file, const struct stat atrr);
 
 int do_type(mode_t mode);
 
 int do_name(uid_t uid);
-
 
 
 /**
@@ -102,27 +101,27 @@ int do_name(uid_t uid);
 
 int main(int argc, char *argv[]) {
 
-int ret;
+    int ret;
     struct stat sb;
 
-    if(argc <= 2){
-        fprintf(stderr,"usage: %s -option <file-path>\n",argv[0]);
+    if (argc <= 2) {
+        fprintf(stderr, "usage: %s -option <file-path>\n", argv[0]);
         return 1;
     }
-    if(!argv[2]){
-        fprintf(stderr,"%s\nusage: %s -option <file-path>\n","Missing file-path",argv[0]);
+    if (!argv[2]) {
+        fprintf(stderr, "%s\nusage: %s -option <file-path>\n", "Missing file-path", argv[0]);
         return 1;
     }
 
     //parms p = process_parms(argc,argv);
 
 
-    ret = stat(argv[1],&sb);
-    if(ret){
+    ret = stat(argv[1], &sb);
+    if (ret) {
         perror("stat processing error");
     }
 
-    print_ls(argv[1],sb);
+    print_ls(argv[1], sb);
 
     return 0;
 }
@@ -147,9 +146,6 @@ void print_help(void) {
 }
 
 
-
-
-
 /**
  * \brief This process all the passed in parameters from the *argv[]
  * and set status for the reqired parameters in the struct.
@@ -157,109 +153,93 @@ void print_help(void) {
  * the next parameter
  * */
 
-parms process_parms(const int len, char **pms){
+parms process_parms(const int len, char **pms) {
+    parms p = {0};        // to prevent uninitialise message
 
-    parms p ={0};        // to prevent uninitialise message
+    for (int i = 1; (i < len); ++i) {
 
-    if(len <= 1) return p;
-
-
-
-    for (int i = 1; (i <= len) && *pms ; ++i) {
-
-        if((p.spath == NULL) && *(pms+i)[strlen(pms[i])-1] != '-'){
+        /*if is the first argv and is not one of the
+         * options, assign it to the spath.
+         * will check later in do_file and do_dir when other options are
+         * set and they require a spefici types
+         * */
+        if ((i == 1) && *(*(pms + 1)) != '-') {
             size_t l = strlen(pms[i] + 1);
-            if(*(pms+i)[strlen(pms[i])-1] != '/'){
-                p.spath = malloc(sizeof(char) * l +1);
-                snprintf(p.spath, sizeof(l+1),"%s%c",pms[i],'/');
-                p.spath[l+1] = '\0';
 
-
-            } else {
-                p.spath = malloc(sizeof(char) * l);
-                strcpy(p.spath,pms[i]);
-                p.spath[l+1] = '\0';
-
-            }
+            p.spath = malloc(sizeof(char) * l);
+            strcpy(p.spath, pms[i]);
+            p.spath[l + 1] = '\0';
 
             continue;
-        }
-
-
-        if(strcmp(pms[i],"-name") == 0){
+        } else if (strcmp(pms[i], "-name") == 0) {
             size_t l = strlen(pms[i]);
             p.name = malloc(sizeof(char) * l + 1);
-            strcpy(p.name,pms[i]);
-            p.name[l+1] = '\0';
+            strcpy(p.name, pms[i]);
+            p.name[l + 1] = '\0';
 
             continue;
-        }
-
-        if(strcmp(pms[i],"-help")){
+        } else if (strcmp(pms[i], "-help") == 0) {
             p.help = 1;
 
             continue;
-        }
-
-        if(strcmp(pms[i],"-print")){
+        } else if (strcmp(pms[i], "-print") == 0) {
             p.help = 1;
 
             continue;
-        }
-
-        if(strcmp(pms[i],"-ls")){
+        } else if (strcmp(pms[i], "-ls") == 0) {
             p.ls = 1;
 
             continue;
-        }
-
-        if(strcmp(pms[i],"-type")){
-            char f = *(pms[++i]);
-            if (f == 'f' || f =='b' || f == 'c' ||
-                f == 'd' ||f == 's' || f == 'p'|| f == 'l'){
+        } else if (strcmp(pms[i], "-type") == 0) {
+            char f = *(pms[i + 1]);
+            if (f == 'f' || f == 'b' || f == 'c' ||
+                f == 'd' || f == 's' || f == 'p' || f == 'l') {
                 p.f_type = f;
                 continue;
-            } else{
-                printf("myfind: Unknown argument to %s: %c",pms[i],f);
+            } else {
+                printf("myfind: Unknown argument to %s: %c\n", pms[i], f);
+                exit(EXIT_FAILURE);
             }
 
-        }
 
+        } else
 
-        /*First confirm the user in the passwd database
-         * getpwnam return NULL if no match is found in the database
-         * if no match is found then check if is a digit and extract it as user_id
-         * otherwise report error and exit failure
-         * This check cases where in the passwd database a username is a number
-         * */
-        if(strcmp(pms[i],"-user")){
+            /*First confirm the user in the passwd database
+             * getpwnam return NULL if no match is found in the database
+             * if no match is found then check if is a digit and extract it as user_id
+             * otherwise report error and exit failure
+             * This check cases where in the passwd database a username is a number
+             * */
+
+        if (strcmp(pms[i], "-user") == 0) {
 
             struct passwd *pd;
-            if(pms[i+1]){
-                p.user = strcpy(malloc(sizeof(strlen(pms[i+1]))),pms[i+1]);
-                if((pd = getpwnam(pms[i+1]))){
+            if (pms[i + 1]) {
+                p.user = strcpy(malloc(sizeof(strlen(pms[i + 1]))), pms[i + 1]);
+                if ((pd = getpwnam(pms[i + 1]))) {
                     p.user_id = pd->pw_uid;
                     continue;
-                } else if(isdigit(pms[i][0])){
-                    sscanf(p.user,"%lu",&p.user_id);
+                } else if (isdigit(pms[i][0])) {
+                    sscanf(p.user, "%lu", &p.user_id);
                     continue;
-                } else{
-                    printf("myfind: `%s` is not a the name of a known user ",pms[i+1]);
+                } else {
+                    printf("myfind: `%s` is not a the name of a known user \n", pms[i + 1]);
                     exit(EXIT_FAILURE);
                 }
 
 
-            } else{
+            } else {
 
-                printf("myfind: missing argument to `%s`",pms[i]);
+                printf("myfind: missing argument to `%s`\n", pms[i]);
                 exit(EXIT_FAILURE);
 
             }
 
 
+        } else {
+            printf("myfind: Unknown predicate `%s`\n", pms[i]);
+
         }
-
-
 
 
     }
@@ -267,12 +247,9 @@ parms process_parms(const int len, char **pms){
     return p;
 
 
+
+
 }
-
-
-
-
-
 
 
 /** \brief
@@ -280,15 +257,15 @@ parms process_parms(const int len, char **pms){
  * -rwxr-xr-x. 1 root root 3756 Feb  5 20:18 filename.extension
  * putting everything in the main function here as one method.
  * */
-void print_ls(const char *filename,const struct stat sb){
+void print_ls(const char *filename, const struct stat sb) {
 
     struct group *gp;
     struct passwd *pd;
     char ftpe;
 
-    switch (sb.st_mode & S_IFMT){
+    switch (sb.st_mode & S_IFMT) {
         case S_IFREG:
-            ftpe =  '-';
+            ftpe = '-';
             break;
         case S_IFDIR:
             ftpe = 'd';
@@ -328,7 +305,7 @@ void print_ls(const char *filename,const struct stat sb){
      * */
     char *ntime = ctime(&sb.st_mtim.tv_sec) + 4;
 
-    ntime[strlen(ntime)-9] = '\0';
+    ntime[strlen(ntime) - 9] = '\0';
 
 
     /*Allocating memory for a null-terminated string for the file permission format
@@ -336,24 +313,24 @@ void print_ls(const char *filename,const struct stat sb){
      * using snprntf to store the results in the required formatted output
      * put a null-terminator at the end of the char array
      * */
-    char *permstr = malloc(sizeof(char)*LEN);
+    char *permstr = malloc(sizeof(char) * LEN);
 
-    snprintf(permstr,STR_SIZE, "%c%c%c%c%c%c%c%c%c%c",ftpe, (sb.st_mode  & S_IRUSR) ? 'r' : '-',
-             (sb.st_mode  & S_IWUSR) ? 'w':'-',(sb.st_mode & S_ISUID)?(sb.st_mode & S_IXUSR ? 's':'S'):
-                                               (sb.st_mode & S_IXUSR ?'x':'-'),
+    snprintf(permstr, STR_SIZE, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb.st_mode & S_IRUSR) ? 'r' : '-',
+             (sb.st_mode & S_IWUSR) ? 'w' : '-', (sb.st_mode & S_ISUID) ? (sb.st_mode & S_IXUSR ? 's' : 'S') :
+                                                 (sb.st_mode & S_IXUSR ? 'x' : '-'),
 
-             (sb.st_mode  && S_IRGRP)?'r':'-',(sb.st_mode  & S_IWGRP)?'w':'-',
-                                (sb.st_mode  & S_ISGID)?(sb.st_mode & S_IXGRP ?'s':'S'):(sb.st_mode & S_IXGRP?'x':'-'),
-             (sb.st_mode  & S_IROTH)?'r':'-',(sb.st_mode  & S_IWOTH)?'w':'-',
-                                (sb.st_mode  & S_ISVTX)?(sb.st_mode & S_IXOTH ?'t':'T'):(sb.st_mode & S_IXOTH? 'x':'-'));
+             (sb.st_mode && S_IRGRP) ? 'r' : '-', (sb.st_mode & S_IWGRP) ? 'w' : '-',
+             (sb.st_mode & S_ISGID) ? (sb.st_mode & S_IXGRP ? 's' : 'S') : (sb.st_mode & S_IXGRP ? 'x' : '-'),
+             (sb.st_mode & S_IROTH) ? 'r' : '-', (sb.st_mode & S_IWOTH) ? 'w' : '-',
+             (sb.st_mode & S_ISVTX) ? (sb.st_mode & S_IXOTH ? 't' : 'T') : (sb.st_mode & S_IXOTH ? 'x' : '-'));
 
-    permstr[LEN-1] = '\0';
+    permstr[LEN - 1] = '\0';
 
 
     printf("%s  %ld %s %s %lld %s %s\n",
            permstr, sb.st_nlink,
-           pd->pw_name, gp->gr_name, (long long)sb.st_size,
-           ntime,filename);
+           pd->pw_name, gp->gr_name, (long long) sb.st_size,
+           ntime, filename);
 
 
     free(permstr);
