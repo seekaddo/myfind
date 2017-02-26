@@ -75,7 +75,7 @@ void do_dir(const char *dir_name, const parms *parms);
 
 parms process_parms(const int len, char **pms);
 
-char *get_smlink(char file_path, const struct stat attr);
+char *get_smlink(const char *file_path, const struct stat attr);
 
 void print_ls(const char *file, const struct stat atrr);
 
@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) {
 
     parms p = process_parms(argc,argv);
 
-
     if(p.help){
         print_help();
         clean_parms(&p);
@@ -130,6 +129,9 @@ int main(int argc, char *argv[]) {
         }
 
         print_ls(argv[1], sb);
+
+        /*  test call get_symlink*/
+        printf("returned value of get_symlink is -> [%s]\n", get_smlink(argv[1], sb));
     }
 
     return 0;
@@ -369,3 +371,34 @@ void clean_parms(parms *pm){
 
 }
 
+/** \brief
+ * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
+ * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
+ * */
+ char *get_smlink(const char *file_path, const struct stat attr){
+
+   char *actualpath = NULL;
+   char *ret_val_actualpath = NULL;
+
+/* only necessary to allow correct compilation */
+   printf("\nMode of file is [%d]\n",attr.st_mode & S_IRUSR);
+
+/* get with realpath() the original of the symbolic link */
+   actualpath = realpath(file_path, ret_val_actualpath);
+   if (actualpath != NULL)
+   {
+/*       ... test output of retrieved original of the given symbolic link ...   */
+       printf("original of symbolic link [%s] is -> [%s]\n",file_path, actualpath);
+   }
+   else
+   {
+/*       ... handle error ...   */
+       printf("failed to retrieve original of symbolic link -> [%s]\n",file_path);
+
+
+   }
+
+   free(ret_val_actualpath);
+   return(actualpath);
+
+}
