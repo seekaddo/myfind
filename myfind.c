@@ -29,9 +29,10 @@
  */
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <limits.h>
 #include <unistd.h>
+
+#include <dirent.h>
 
 #include <sys/stat.h>
 #include <malloc.h>
@@ -47,6 +48,8 @@
  */
 #define STR_SIZE sizeof("?rwxrwxrwx")
 #define LEN 12
+
+/* #define DEBUG_SWITCH */
 /*
  * -------------------------------------------------------------- typedefs --
  */
@@ -129,16 +132,24 @@ int main(int argc, char *argv[]) {
     if(p.ls){
         ret = lstat(argv[1], &sb);
         if (ret) {
-            perror("stat processing error");
+            perror("lstat processing error");
         }
 
         print_ls(argv[1], sb);
 
+
+#ifdef DEBUG_SWITCH
         /*  test call get_symlink*/
         if((sb.st_mode & S_IFMT) == S_IFLNK)
           printf("returned value of get_symlink is -> [%s]\n", get_smlink(argv[1], sb));
-    }
+#endif
 
+        /*  test call do_dir*/
+        if((sb.st_mode & S_IFMT) == S_IFDIR)
+            do_dir(argv[1], &p);
+
+    }
+    printf("\n");
     return 0;
 }
 
@@ -177,7 +188,7 @@ parms process_parms(const int len, char **pms) {
         /*if is the first argv and is not one of the
          * options, assign it to the spath.
          * will check later in do_file and do_dir when other options are
-         * set and they require a spefici types
+         * set and they require a specific type
          * */
         if ((i == 1) && *(*(pms + 1)) != '-') {
             size_t l = strlen(pms[i] + 1);
@@ -358,14 +369,17 @@ void print_ls(const char *filename, const struct stat sb) {
     permstr[LEN - 1] = '\0';
 
 
-    printf("%s  %ld %s %s %lld %s %s\n",
+    char *symlink = get_smlink(filename,sb);
+
+    printf("\n%s  %ld %s %s %lld %s %s %s %s",
            permstr, sb.st_nlink,
            pd->pw_name, gp->gr_name, (long long) sb.st_size,
-           ntime, filename);
+           ntime, filename, (symlink?"->":""),(symlink?symlink:""));
+
 
 
     free(permstr);
-    permstr = NULL;
+    free(symlink);
 
 }
 
@@ -380,29 +394,29 @@ void clean_parms(parms *pm){
  * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
  * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
  * */
- char *get_smlink(const char *file_path, const struct stat tr){
+char *get_smlink(const char *file_path, const struct stat attr){
 
-   char *sym_link = NULL;
-   ssize_t r, bufsiz;;
+    char *sym_link = NULL;
+    ssize_t r, bufsiz;;
 
 
-   bufsiz = tr.st_size + 1;
+    bufsiz = attr.st_size + 1;
 
-    if (S_ISLNK(tr.st_mode)) {
-        if (tr.st_size == 0)
+    if (S_ISLNK(attr.st_mode)) {
+        if (attr.st_size == 0)
             bufsiz = PATH_MAX;
 
 
-        linkname = malloc(sizeof(char) * bufsiz);
-        if (linkname == NULL) {
+        sym_link = malloc(sizeof(char) * bufsiz);
+        if (sym_link == NULL) {
             perror("malloc");
             exit(EXIT_FAILURE);
         }
 
 
-        while((r = readlink(argv[1], linkname, bufsiz)) > 1 && (r > bufsiz)){
+        while((r = readlink(file_path, sym_link, bufsiz)) > 1 && (r > bufsiz)){
             bufsiz *=2;
-            if((linkname = realloc(linkname,sizeof(char)*bufsiz)) == NULL){
+            if((sym_link = realloc(sym_link,sizeof(char)*bufsiz)) == NULL){
                 printf("Not enough memory to continue\n");
                 exit(EXIT_FAILURE);
             }
@@ -416,15 +430,50 @@ void clean_parms(parms *pm){
 
 
 
-        linkname[r] = '\0';
+        sym_link[r] = '\0';
 
 
 
-      return linkname;
+        return sym_link;
     } else
         printf("Sorry is not a link\n");
-     
-     return NULL;
 
+    return NULL;
+
+}
+
+
+/** \brief
+ * gathering informations about the given directory and print them out:
+ * example of test-output "inode number: [1587860]	-> file: [mail]"
+ * */
+void do_dir(const char *dir_name, const parms *parms){
+
+/*	int return_val;	*/
+    struct stat sb;
+    struct dirent *entry;
+    DIR *dir;
+
+
+
+
+    dir = opendir (dir_name);
+
+    printf("contents of direchtory: [%s]\n", parms->spath);
+    while ((entry = readdir (dir)) != NULL) {
+#ifdef DEBUG_SWITCH
+        printf("inode number: [%ld]	-> file: [%s]\n", entry->d_ino, entry->d_name);
+#endif
+        printf("%s", entry->d_name);
+        lstat(dir_name, &sb);
+        print_ls(dir_name, sb);
+    }
+
+#ifdef DEBUG_SWITCH
+    if (!entry)
+		perror ("readdir");
+#endif
+
+    closedir (dir);
 
 }
