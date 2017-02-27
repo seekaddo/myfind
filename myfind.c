@@ -136,6 +136,7 @@ int main(int argc, char *argv[]) {
         }
 
         print_ls(argv[1], sb);
+        
 
         /*  test call do_dir*/
         if((sb.st_mode & S_IFMT) == S_IFDIR)
@@ -338,6 +339,7 @@ void print_ls(const char *filename, const struct stat sb) {
      * PN: ctime() is a MT-Unsafe functions, that means is not safe to call/use in a multithreaded programm
      * in a multithreaded programm strftime() is recommended
      * */
+
     char *ntime = ctime(&sb.st_mtim.tv_sec) + 4;
 
     ntime[strlen(ntime) - 9] = '\0';
