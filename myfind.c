@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(p.ls){
-        ret = stat(argv[1], &sb);
+        ret = lstat(argv[1], &sb);
         if (ret) {
             perror("stat processing error");
         }
