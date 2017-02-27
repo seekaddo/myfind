@@ -46,7 +46,7 @@ EXCLUDE_PATTERN=footrulewidth
 .PHONY: all
 all: myfind
 
-hello: $(OBJECTS)
+myfind: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
