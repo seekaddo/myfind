@@ -137,9 +137,6 @@ int main(int argc, char *argv[]) {
 
         print_ls(argv[1], sb);
 
-        /*  test call do_dir*/
-        if((sb.st_mode & S_IFMT) == S_IFDIR)
-            do_dir(argv[1], &p);
 
     }
     printf("\n");
@@ -362,6 +359,7 @@ void print_ls(const char *filename, const struct stat sb) {
     permstr[LEN - 1] = '\0';
 
 
+       
     char *symlink = get_smlink(filename,sb);
 
     printf("\n%s  %ld %s %s %lld %s %s %s %s",
@@ -436,37 +434,3 @@ char *get_smlink(const char *file_path, const struct stat attr){
 }
 
 
-/** \brief
- * gathering informations about the given directory and print them out:
- * example of test-output "inode number: [1587860]	-> file: [mail]"
- * */
-void do_dir(const char *dir_name, const parms *parms){
-
-/*	int return_val;	*/
-    struct stat sb;
-    struct dirent *entry;
-    DIR *dir;
-
-
-
-
-    dir = opendir (dir_name);
-
-    printf("contents of direchtory: [%s]\n", parms->spath);
-    while ((entry = readdir (dir)) != NULL) {
-#ifdef DEBUG_SWITCH
-        printf("inode number: [%ld]	-> file: [%s]\n", entry->d_ino, entry->d_name);
-#endif
-        printf("%s", entry->d_name);
-        lstat(dir_name, &sb);
-        print_ls(dir_name, sb);
-    }
-
-#ifdef DEBUG_SWITCH
-    if (!entry)
-		perror ("readdir");
-#endif
-
-    closedir (dir);
-
-}
