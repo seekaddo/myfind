@@ -430,8 +430,7 @@ char *get_smlink(const char *file_path, const struct stat attr){
 
 
         return sym_link;
-    } else
-        printf("Sorry is not a link\n");
+    }
 
     return NULL;
 
@@ -461,7 +460,6 @@ void do_dir(const char *dir_name, const parms *parms){
 #endif
         printf("%s", entry->d_name);
         lstat(dir_name, &sb);
-        print_ls(dir_name, sb);
     }
 
 #ifdef DEBUG_SWITCH
