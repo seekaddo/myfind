@@ -137,13 +137,6 @@ int main(int argc, char *argv[]) {
 
         print_ls(argv[1], sb);
 
-
-#ifdef DEBUG_SWITCH
-        /*  test call get_symlink*/
-        if((sb.st_mode & S_IFMT) == S_IFLNK)
-          printf("returned value of get_symlink is -> [%s]\n", get_smlink(argv[1], sb));
-#endif
-
         /*  test call do_dir*/
         if((sb.st_mode & S_IFMT) == S_IFDIR)
             do_dir(argv[1], &p);
