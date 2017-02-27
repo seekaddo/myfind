@@ -28,7 +28,11 @@
  * -------------------------------------------------------------- includes --
  */
 
-#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <limits.h>
+#include <unistd.h>
+
 #include <sys/stat.h>
 #include <malloc.h>
 #include <memory.h>
@@ -123,12 +127,16 @@ int main(int argc, char *argv[]) {
     }
 
     if(p.ls){
-        ret = stat(argv[1], &sb);
+        ret = lstat(argv[1], &sb);
         if (ret) {
             perror("stat processing error");
         }
 
         print_ls(argv[1], sb);
+
+        /*  test call get_symlink*/
+        if((sb.st_mode & S_IFMT) == S_IFLNK)
+          printf("returned value of get_symlink is -> [%s]\n", get_smlink(argv[1], sb));
     }
 
     return 0;
@@ -368,3 +376,47 @@ void clean_parms(parms *pm){
 
 }
 
+/** \brief
+ * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
+ * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
+ * */
+ char *get_smlink(const char *file_path, const struct stat attr){
+
+   char *sym_link = NULL;
+   ssize_t r, bufsiz;;
+
+
+   bufsiz = attr.st_size + 1;
+
+   /* Some magic symlinks under (for example) /proc and /sys
+      report 'st_size' as zero. In that case, take PATH_MAX as
+      a "good enough" estimate */
+
+   if (attr.st_size == 0)
+       bufsiz = PATH_MAX;
+
+   printf("%zd\n", bufsiz);
+
+   sym_link = malloc(bufsiz);
+   if (sym_link == NULL) {
+       perror("malloc");
+       exit(EXIT_FAILURE);
+   }
+
+   r = readlink(file_path, sym_link, bufsiz);
+   if (r == -1) {
+       perror("readlink");
+       exit(EXIT_FAILURE);
+   }
+
+   sym_link[r] = '\0';
+
+   printf("'%s' points to '%s'\n", file_path, sym_link);
+
+   if (r == bufsiz)
+       printf("(Returned buffer may have been truncated)\n");
+
+   return(sym_link);
+   free(sym_link);
+   exit(EXIT_SUCCESS);
+}
