@@ -138,16 +138,6 @@ int main(int argc, char *argv[]) {
         print_ls(argv[1], sb);
 
 
-#ifdef DEBUG_SWITCH
-        /*  test call get_symlink*/
-        if((sb.st_mode & S_IFMT) == S_IFLNK)
-          printf("returned value of get_symlink is -> [%s]\n", get_smlink(argv[1], sb));
-#endif
-
-        /*  test call do_dir*/
-        if((sb.st_mode & S_IFMT) == S_IFDIR)
-          do_dir(argv[1], &p);
-
     }
     printf("\n");
     return 0;
@@ -369,23 +359,18 @@ void print_ls(const char *filename, const struct stat sb) {
     permstr[LEN - 1] = '\0';
 
 
+       
+    char *symlink = get_smlink(filename,sb);
 
-    /* testcall for checking if get_smlink() is necessary */
-    if((sb.st_mode & S_IFMT) == S_IFLNK)
-    	printf("\n%s  %ld %s %s %lld %s %s -> %s",
+    printf("\n%s  %ld %s %s %lld %s %s %s %s",
            permstr, sb.st_nlink,
            pd->pw_name, gp->gr_name, (long long) sb.st_size,
-           ntime, filename, get_smlink(filename, sb));
-     else
-     	printf("\n%s  %ld %s %s %lld %s %s",
-           permstr, sb.st_nlink,
-           pd->pw_name, gp->gr_name, (long long) sb.st_size,
-           ntime, filename);
+           ntime, filename, (symlink?"->":""),(symlink?symlink:""));
 
 
 
     free(permstr);
-    permstr = NULL;
+    free(symlink);
 
 }
 
@@ -400,84 +385,51 @@ void clean_parms(parms *pm){
  * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
  * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
  * */
- char *get_smlink(const char *file_path, const struct stat attr){
+char *get_smlink(const char *file_path, const struct stat attr){
 
-   char *sym_link = NULL;
-   ssize_t r, bufsiz;;
-
-
-   bufsiz = attr.st_size + 1;
-
-   /* Some magic symlinks under (for example) /proc and /sys
-      report 'st_size' as zero. In that case, take PATH_MAX as
-      a "good enough" estimate */
-
-   if (attr.st_size == 0)
-       bufsiz = PATH_MAX;
-
-#ifdef DEBUG_SWITCH
-   printf("%zd\n", bufsiz);
-#endif
-
-   sym_link = malloc(bufsiz);
-   if (sym_link == NULL) {
-       perror("malloc");
-       exit(EXIT_FAILURE);
-   }
-
-   r = readlink(file_path, sym_link, bufsiz);
-   if (r == -1) {
-       perror("readlink");
-       exit(EXIT_FAILURE);
-   }
-
-   sym_link[r] = '\0';
-
-#ifdef DEBUG_SWITCH
-   printf("'%s' points to '%s'\n", file_path, sym_link);
-#endif
-
-   if (r == bufsiz)
-       printf("(Returned buffer may have been truncated)\n");
-
-   return(sym_link);
-   free(sym_link);
-   exit(EXIT_SUCCESS);
-}
+    char *sym_link = NULL;
+    ssize_t r, bufsiz;;
 
 
-/** \brief
- * gathering informations about the given directory and print them out:
- * example of test-output "inode number: [1587860]	-> file: [mail]"
- * */
-void do_dir(const char *dir_name, const parms *parms){
+    bufsiz = attr.st_size + 1;
 
-/*	int return_val;	*/
-    struct stat sb;
-    struct dirent *entry;
-	DIR *dir;
+    if (S_ISLNK(attr.st_mode)) {
+        if (attr.st_size == 0)
+            bufsiz = PATH_MAX;
+
+
+        sym_link = malloc(sizeof(char) * bufsiz);
+        if (sym_link == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+
+
+        while((r = readlink(file_path, sym_link, bufsiz)) > 1 && (r > bufsiz)){
+            bufsiz *=2;
+            if((sym_link = realloc(sym_link,sizeof(char)*bufsiz)) == NULL){
+                printf("Not enough memory to continue\n");
+                exit(EXIT_FAILURE);
+            }
+
+        }
+        if (r == -1) {
+            perror("readlink");
+            exit(EXIT_FAILURE);
+        }
 
 
 
 
-	dir = opendir (dir_name);
+        sym_link[r] = '\0';
 
-	printf("contents of direchtory: [%s]\n", parms->spath);
-	while ((entry = readdir (dir)) != NULL) {
-#ifdef DEBUG_SWITCH
-		printf("inode number: [%ld]	-> file: [%s]\n", entry->d_ino, entry->d_name);
-#endif
- 		printf("%s", entry->d_name);
-		lstat(dir_name, &sb);
-		print_ls(dir_name, sb);
-		}
 
-#ifdef DEBUG_SWITCH
-		if (!entry)
-		perror ("readdir");
-#endif
 
-	closedir (dir);
+        return sym_link;
+    } else
+        printf("Sorry is not a link\n");
+
+    return NULL;
 
 }
 
