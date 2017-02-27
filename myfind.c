@@ -380,43 +380,51 @@ void clean_parms(parms *pm){
  * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
  * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
  * */
- char *get_smlink(const char *file_path, const struct stat attr){
+ char *get_smlink(const char *file_path, const struct stat tr){
 
    char *sym_link = NULL;
    ssize_t r, bufsiz;;
 
 
-   bufsiz = attr.st_size + 1;
+   bufsiz = tr.st_size + 1;
 
-   /* Some magic symlinks under (for example) /proc and /sys
-      report 'st_size' as zero. In that case, take PATH_MAX as
-      a "good enough" estimate */
+    if (S_ISLNK(tr.st_mode)) {
+        if (tr.st_size == 0)
+            bufsiz = PATH_MAX;
 
-   if (attr.st_size == 0)
-       bufsiz = PATH_MAX;
 
-   printf("%zd\n", bufsiz);
+        linkname = malloc(sizeof(char) * bufsiz);
+        if (linkname == NULL) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
 
-   sym_link = malloc(bufsiz);
-   if (sym_link == NULL) {
-       perror("malloc");
-       exit(EXIT_FAILURE);
-   }
 
-   r = readlink(file_path, sym_link, bufsiz);
-   if (r == -1) {
-       perror("readlink");
-       exit(EXIT_FAILURE);
-   }
+        while((r = readlink(argv[1], linkname, bufsiz)) > 1 && (r > bufsiz)){
+            bufsiz *=2;
+            if((linkname = realloc(linkname,sizeof(char)*bufsiz)) == NULL){
+                printf("Not enough memory to continue\n");
+                exit(EXIT_FAILURE);
+            }
 
-   sym_link[r] = '\0';
+        }
+        if (r == -1) {
+            perror("readlink");
+            exit(EXIT_FAILURE);
+        }
 
-   printf("'%s' points to '%s'\n", file_path, sym_link);
 
-   if (r == bufsiz)
-       printf("(Returned buffer may have been truncated)\n");
 
-   return(sym_link);
-   free(sym_link);
-   exit(EXIT_SUCCESS);
+
+        linkname[r] = '\0';
+
+
+
+      return linkname;
+    } else
+        printf("Sorry is not a link\n");
+     
+     return NULL;
+
+
 }
