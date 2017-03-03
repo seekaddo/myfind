@@ -175,6 +175,15 @@ void print_help(void) {
 }
 
 
+
+/**\brief
+ * Documentation will come soon
+ * this initialise the whole myfind command
+ *
+ *
+ * */
+
+
 void startMyFind(char *path[], s_optns *op) {
 
     struct stat fattr;
@@ -545,6 +554,9 @@ void do_file( char *file_path, s_optns *p, struct stat *attr) {
 /** \brief
  * gathering informations about the given directory and print them out:
  * example of test-output "inode number: [1587860]	-> file: [mail]"
+ *
+ * this is just to test my do_file, robert is working on the right do_dir()
+ * for the file prject
  * */
 void do_dir( char *dir_path, s_optns *params, struct stat sb) {
     DIR *dir;
@@ -613,6 +625,12 @@ void do_dir( char *dir_path, s_optns *params, struct stat sb) {
 
 }
 
+
+/**\brief
+ * this is to clean the linkedlist for the options
+ * full documentation will come soon
+ *
+ * */
 
 void clean_parms(s_optns **pm) {
 
