@@ -1,3 +1,8 @@
+
+#define _XOPEN_SOURCE 220112L
+#define _POSIX_C_SOURCE 200112L
+#define _GNU_SOURCE
+
 //
 // Created by seekaddo on 2/16/17.
 //
@@ -447,7 +452,7 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 
 
-    printf("%7lu %8lld %10s %3ld %-8s %-8s %8lld %12s  %s %s %s\n",
+    printf("%7lu %8lld %10s %3li %-8s %-8s %8lld %12s  %s %s %s\n",
            sb->st_ino, nblks, permstr, sb->st_nlink,
            pd->pw_name, gp->gr_name, (long long) sb->st_size,
            ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
