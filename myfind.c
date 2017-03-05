@@ -57,7 +57,6 @@
 #define STR_SIZE sizeof("?rwxrwxrwx")
 #define LEN 12
 
-/* #define DEBUG_SWITCH */
 /*
  * -------------------------------------------------------------- typedefs --
  */
