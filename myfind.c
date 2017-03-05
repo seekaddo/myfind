@@ -56,6 +56,7 @@
  */
 #define STR_SIZE sizeof("?rwxrwxrwx")
 #define LEN 12
+#define ISSUE "Usage: myfind <file or directory> [ <options> ] ..."
 
 /*
  * -------------------------------------------------------------- typedefs --
@@ -130,6 +131,7 @@ int main(int argc, char *argv[]) {
 
 
     char *path_list[argc];
+    memset(path_list,0,argc);   // this is to prevent errors from valgrind
 
 
     s_optns *p = NULL;
@@ -222,10 +224,11 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
     //parms p = {0};        // to prevent uninitialise message
     //option vp = {0};
-    int index = 0, flag = 0, i;
+    int index = 0, flag = 0, i,isOptset = 0;
 
 
-    s_optns *op = malloc(sizeof(*op));
+    s_optns *op = malloc(sizeof(*op));   // use calloc instead of malloc or memset op to prevent errors from valgrind
+    memset(op,0,sizeof(*op));
     s_optns *first = op;
 
     for (i = 1; (i < len); ++i) {
@@ -246,7 +249,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         if (strcmp(parms[i], "-name") == 0) {
             if (parms[++i]) {
                 op->name = parms[i];
-                flag = 1;
+                flag = isOptset = 1;
                 continue;
             } else {
                 printf("myfind: missing argument to `%s`\n", parms[i - 1]);
@@ -256,18 +259,18 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         } else if (strcmp(parms[i], "-help") == 0) {
 
             op->help = 1;
-            flag = 1;
+            flag = isOptset = 1;
             continue;
 
         } else if (strcmp(parms[i], "-print") == 0) {
             op->print = 1;
-            flag = 1;
+            flag = isOptset = 1;
 
             continue;
 
         } else if (strcmp(parms[i], "-ls") == 0) {
             op->ls = 1;
-            flag = 1;
+            flag = isOptset = 1;
             continue;
 
 
@@ -284,7 +287,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                 if (f == 'f' || f == 'b' || f == 'c' ||
                     f == 'd' || f == 's' || f == 'p' || f == 'l') {
                     op->f_type = f;
-                    flag = 1;
+                    flag = isOptset = 1;
                     continue;
                 } else {
                     fprintf(stderr, "myfind: Unknown argument to %s: %c\n", parms[i - 1], *parms[i]);
@@ -314,11 +317,11 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                 op->user = parms[i];
                 if ((pd = getpwnam(op->user))) {
                     op->user_id = pd->pw_uid;
-                    flag = 1;
+                    flag = isOptset = 1;
                     continue;
                 } else if (isdigit(parms[i][0])) {
                     sscanf(op->user, "%lu", &op->user_id);
-                    flag = 1;
+                    flag = isOptset = 1;
                     continue;
                 } else {
                     printf("myfind: `%s` is not a  name of a known user \n", parms[i]);
@@ -334,6 +337,12 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             }
 
 
+        } else if(isOptset != 0){
+            fprintf(stderr,"%s\n"
+                    "Run: myfind -help for more information\n",ISSUE);
+            exit(EXIT_FAILURE);
+
+
         } else {
             flag = 0;
         }
@@ -342,7 +351,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
         /*Getting the path here.
         * */
-        if (parms[i][0] != '-') {
+        if ( (isOptset == 0) && parms[i][0] != '-') {
 
             // size_t l = strlen(parms[i])+1;
             // spath[index] = malloc(sizeof(char) * l);
@@ -588,7 +597,7 @@ void do_dir(char *dir_path, s_optns *params, struct stat sb) {
         }
 
         len += strlen(e->d_name) + 2;
-        new_path = malloc(sizeof(char) * len);
+        new_path = alloca(sizeof(char) * len);        // testing if using stack memory will remove some overload on programm
 
         if (!new_path) {
             fprintf(stderr, "malloc: malloc(): %s\n", strerror(errno));
@@ -612,13 +621,13 @@ void do_dir(char *dir_path, s_optns *params, struct stat sb) {
 
         } else {
             fprintf(stderr, "myfind: lstat(%s): %s\n", new_path, strerror(errno));
-            free(new_path);
-            new_path = NULL;
+            //free(new_path);
+            //new_path = NULL;
             continue;
         }
 
-        free(new_path);
-        new_path = NULL;
+        //free(new_path);
+        //new_path = NULL;
     }
 
     if (closedir(dir) != 0) {
