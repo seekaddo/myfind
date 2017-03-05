@@ -144,14 +144,6 @@ int main(int argc, char *argv[]) {
 
     startMyFind(path_list, p);
     clean_parms(&p);
-    // clean_me(path_list);
-    /* for (int i = 0; i < argc; ++i) {
-         if(path_list[i] != NULL) {
-             printf("%d---> %s\n",i,path_list[i]);
-             free(path_list[i]);
-         }
-         //assert(path_list[i] == NULL);
-     }*/
 
 
     return 0;
@@ -280,14 +272,28 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
 
         } else if (strcmp(parms[i], "-type") == 0) {
-            char f = *(parms[++i]);
-            if (f == 'f' || f == 'b' || f == 'c' ||
-                f == 'd' || f == 's' || f == 'p' || f == 'l') {
-                op->f_type = f;
-                flag = 1;
-                continue;
+            if (parms[++i]) {
+
+                if (strlen(parms[i]) > 1) {
+                    fprintf(stderr, "myfind: Arguments to -type should contain only one letter\n");
+                    exit(EXIT_FAILURE);
+                }
+
+                char f = *(parms[i]);
+
+                if (f == 'f' || f == 'b' || f == 'c' ||
+                    f == 'd' || f == 's' || f == 'p' || f == 'l') {
+                    op->f_type = f;
+                    flag = 1;
+                    continue;
+                } else {
+                    fprintf(stderr, "myfind: Unknown argument to %s: %c\n", parms[i - 1], *parms[i]);
+                    exit(EXIT_FAILURE);
+                }
+
+
             } else {
-                printf("myfind: Unknown argument to %s: %c\n", parms[i - 1], *parms[i]);
+                printf("myfind: missing argument to `%s`\n", parms[i]);
                 exit(EXIT_FAILURE);
             }
 
