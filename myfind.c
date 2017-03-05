@@ -84,7 +84,7 @@ typedef struct _alopts {
 
 void print_help(void);
 
-void do_file( char *file_path, s_optns *parms, struct stat *atrr);
+void do_file(char *file_path, s_optns *parms, struct stat *atrr);
 
 void do_dir(char *dir_path, s_optns *parms, struct stat sb);
 
@@ -133,10 +133,10 @@ int main(int argc, char *argv[]) {
 
     char *path_list[argc];
     for (int j = 0; j < argc; ++j) {
-        path_list[j] =NULL;
+        path_list[j] = NULL;
     }
 
-    s_optns *p =  process_parms(argc, path_list, argv);
+    s_optns *p = process_parms(argc, path_list, argv);
 
     //printf("Print is vidible here in main----->%d\n",p->next->print);
     if (p->help) {
@@ -145,16 +145,16 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    startMyFind(path_list,p);
+    startMyFind(path_list, p);
     clean_parms(&p);
-   // clean_me(path_list);
-   /* for (int i = 0; i < argc; ++i) {
-        if(path_list[i] != NULL) {
-            printf("%d---> %s\n",i,path_list[i]);
-            free(path_list[i]);
-        }
-        //assert(path_list[i] == NULL);
-    }*/
+    // clean_me(path_list);
+    /* for (int i = 0; i < argc; ++i) {
+         if(path_list[i] != NULL) {
+             printf("%d---> %s\n",i,path_list[i]);
+             free(path_list[i]);
+         }
+         //assert(path_list[i] == NULL);
+     }*/
 
 
     return 0;
@@ -180,7 +180,6 @@ void print_help(void) {
 }
 
 
-
 /**\brief
  * Documentation will come soon
  * this initialise the whole myfind command
@@ -199,7 +198,7 @@ void startMyFind(char *path[], s_optns *op) {
     //char **sSource = p;
     if (path[i] == NULL) {
         path[i] = cwd;
-        path[i+1] = NULL;
+        path[i + 1] = NULL;
         //p = path;
     }
 
@@ -234,52 +233,52 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
     //parms p = {0};        // to prevent uninitialise message
     //option vp = {0};
-    int index = 0;
+    int index = 0, flag = 0;
 
-    //spath = malloc(sizeof(char *) * len);
-    // = malloc(sizeof(char *) * len);
-    //option *op = malloc(sizeof(struct options));
+
     s_optns *op = malloc(sizeof(*op));
     s_optns *first = op;
 
-    for (int i = 1; (i < len); ++i, op = op->next) {
+    for (int i = 1; (i < len); ++i) {
 
-        //op->next = calloc(1, sizeof(*op));
-        op->next = malloc(sizeof(*op));
-        //memset(op->next,0,sizeof(*op));
+        if (flag == 1) {
+            //op = op->next;
+            op->next = calloc(1, sizeof(*op));
+            if (op->next == NULL) {
+                fprintf(stderr, "myfind: calloc(): %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
 
-        if (op->next == NULL) {
-            fprintf(stderr, "myfind: calloc(): %s\n", strerror(errno));
+            op = op->next;
+            op->next = NULL;
         }
 
 
         if (strcmp(parms[i], "-name") == 0) {
-            if(parms[++i]){
-                //size_t l = strlen(parms[i]) + 2;
-                //op->name = malloc(sizeof(char) * l);
-                //strcpy(op->name, parms[i]);
-                //op->name[l -1] = '\0';
-                // i = i + 1;
-
+            if (parms[++i]) {
                 op->name = parms[i];
+                flag = 1;
                 continue;
-            } else{
-                printf("myfind: missing argument to `%s`\n", parms[i-1]);
+            } else {
+                printf("myfind: missing argument to `%s`\n", parms[i - 1]);
                 exit(EXIT_FAILURE);
             }
 
         } else if (strcmp(parms[i], "-help") == 0) {
 
             op->help = 1;
+            flag = 1;
             continue;
 
         } else if (strcmp(parms[i], "-print") == 0) {
             op->print = 1;
+            flag = 1;
 
             continue;
 
         } else if (strcmp(parms[i], "-ls") == 0) {
             op->ls = 1;
+            flag = 1;
             continue;
 
 
@@ -288,10 +287,10 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             if (f == 'f' || f == 'b' || f == 'c' ||
                 f == 'd' || f == 's' || f == 'p' || f == 'l') {
                 op->f_type = f;
-                //i = i + 1;
+                flag = 1;
                 continue;
             } else {
-                printf("myfind: Unknown argument to %s: %c\n", parms[i-1], *parms[i]);
+                printf("myfind: Unknown argument to %s: %c\n", parms[i - 1], *parms[i]);
                 exit(EXIT_FAILURE);
             }
 
@@ -309,18 +308,14 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
             struct passwd *pd;
             if (parms[++i]) {
-                //size_t l = strlen(parms[i])+1;
-                //op->user = malloc(sizeof(char) * l);
-                //strcpy(op->user, parms[i]);
-                //op->user[l-1] = '\0';
                 op->user = parms[i];
                 if ((pd = getpwnam(op->user))) {
                     op->user_id = pd->pw_uid;
-                    //i = i + 1;
+                    flag = 1;
                     continue;
                 } else if (isdigit(parms[i][0])) {
                     sscanf(op->user, "%lu", &op->user_id);
-                    //i = i + 1;
+                    flag = 1;
                     continue;
                 } else {
                     printf("myfind: `%s` is not a  name of a known user \n", parms[i]);
@@ -336,6 +331,8 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             }
 
 
+        } else {
+            flag = 0;
         }
 
 
@@ -344,11 +341,11 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         * */
         if (parms[i][0] != '-') {
 
-           // size_t l = strlen(parms[i])+1;
-           // spath[index] = malloc(sizeof(char) * l);
+            // size_t l = strlen(parms[i])+1;
+            // spath[index] = malloc(sizeof(char) * l);
 
             //strcpy(spath[index], parms[i]);
-           // spath[index][l + 1] = '\0';
+            // spath[index][l + 1] = '\0';
             spath[index] = parms[i];
             index++;
 
@@ -463,7 +460,7 @@ void print_ls(const char *filename, const struct stat *sb) {
 }
 
 /*The other macros is not working so i decided to use this macros*/
-char ftype(mode_t mode){
+char ftype(mode_t mode) {
 
     if (S_ISBLK(mode)) {
         return 'b';
@@ -497,14 +494,13 @@ char ftype(mode_t mode){
 }
 
 
-
-void do_file( char *file_path, s_optns *p, struct stat *attr) {
+void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
     int flag = 0;
 
     do {
         if (p->f_type) {
-            if(ftype(attr->st_mode) != p->f_type){ //todo: this works
+            if (ftype(attr->st_mode) != p->f_type) { //todo: this works
                 return;
             }
 
@@ -513,7 +509,7 @@ void do_file( char *file_path, s_optns *p, struct stat *attr) {
         if (p->name) {
             char *f = basename(file_path);   //todo: it works now
 
-            if(fnmatch(p->name,f,0) != 0){
+            if (fnmatch(p->name, f, 0) != 0) {
                 return;
             }
 
@@ -523,17 +519,17 @@ void do_file( char *file_path, s_optns *p, struct stat *attr) {
             struct passwd *pd;
             pd = getpwuid(attr->st_uid);
 
-            if(strcmp(p->user,pd->pw_name)!=0){
+            if (strcmp(p->user, pd->pw_name) != 0) {
                 return;
 
-            } else if(p->user_id !=attr->st_uid){
+            } else if (p->user_id != attr->st_uid) {
 
                 return;
 
             }
         }
-        if(p->print){                       //todo: works fine
-            printf("%s\n",file_path);
+        if (p->print) {                       //todo: works fine
+            printf("%s\n", file_path);
             flag = 1;
         }
 
@@ -548,8 +544,8 @@ void do_file( char *file_path, s_optns *p, struct stat *attr) {
     } while (p != NULL);
 
 
-    if(flag == 0){             //todo: i use it in case there is no parameter set, example find or myfind
-        printf("%s\n",file_path);
+    if (flag == 0) {             //todo: i use it in case there is no parameter set, example find or myfind
+        printf("%s\n", file_path);
     }
 
 
@@ -562,13 +558,12 @@ void do_file( char *file_path, s_optns *p, struct stat *attr) {
  * this is just to test my do_file, robert is working on the right do_dir()
  * for the file prject
  * */
-void do_dir( char *dir_path, s_optns *params, struct stat sb) {
+void do_dir(char *dir_path, s_optns *params, struct stat sb) {
     DIR *dir;
     struct dirent *e;
     size_t len;
     char *sl = "";
     char *new_path;
-
 
 
     if ((dir = opendir(dir_path)) == NULL) {
@@ -597,7 +592,7 @@ void do_dir( char *dir_path, s_optns *params, struct stat sb) {
         }
 
         //snprintf(full_path, length, "%s%s%s", path, slash, entry->d_name)
-        snprintf(new_path, len, "%s%s%s", dir_path,sl, e->d_name);
+        snprintf(new_path, len, "%s%s%s", dir_path, sl, e->d_name);
 
 
         if (lstat(new_path, &sb) == 0) {
@@ -638,16 +633,16 @@ void do_dir( char *dir_path, s_optns *params, struct stat sb) {
 
 void clean_parms(s_optns **pm) {
 
-   /* if(*pm ==NULL){
-        return;
-    }
-    clean_parms(&(*pm)->next);
-    free((*pm)->name);
-    free((*pm)->user);
-    free(*pm);*/
+    /* if(*pm ==NULL){
+         return;
+     }
+     clean_parms(&(*pm)->next);
+     free((*pm)->name);
+     free((*pm)->user);
+     free(*pm);*/
 
     s_optns *first = *pm;
-    while(first){
+    while (first) {
         s_optns *temp = first->next;
 
         //free(first->name),first->name = NULL;
