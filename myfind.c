@@ -102,7 +102,7 @@ void startMyFind(char **p, s_optns *option1);
 char ftype(mode_t mode);
 
 void clean_parms(s_optns **pm);
-void clean_me(char **av){
+/*void clean_me(char **av){
     int i =0;
 
     while(av[i]){
@@ -110,7 +110,7 @@ void clean_me(char **av){
         free(av[i]);
         i++;
     }
-}
+}*/
 
 
 /**
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 
     startMyFind(path_list,p);
     clean_parms(&p);
-    clean_me(path_list);
+   // clean_me(path_list);
    /* for (int i = 0; i < argc; ++i) {
         if(path_list[i] != NULL) {
             printf("%d---> %s\n",i,path_list[i]);
@@ -194,29 +194,27 @@ void startMyFind(char *path[], s_optns *op) {
     struct stat fattr;
     int ret = 0, i = 0;
     char cwd[] = "./";
-    char **p;
+    //char **p;
 
     //char **sSource = p;
     if (path[i] == NULL) {
-        path[i] = strcpy(malloc(strlen(cwd)+1),cwd);
+        path[i] = cwd;
         path[i+1] = NULL;
-        p = path;
-    } else{
-        p = path;
+        //p = path;
     }
 
-    while (p[i]) {
+    while (path[i]) {
 
-        ret = lstat(*p, &fattr);
+        ret = lstat(*path, &fattr);
         if (ret == -1) {
-            fprintf(stderr, "myfind: lstat(%s): %s\n", p[i], strerror(errno));
+            fprintf(stderr, "myfind: lstat(%s): %s\n", path[i], strerror(errno));
             exit(EXIT_FAILURE);
         }
 
-        do_file(p[i], op, &fattr);
+        do_file(path[i], op, &fattr);
 
         if (S_ISDIR(fattr.st_mode))
-            do_dir(p[i], op, fattr);
+            do_dir(path[i], op, fattr);
 
         i++;
     }
@@ -325,7 +323,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                     //i = i + 1;
                     continue;
                 } else {
-                    printf("myfind: `%s` is not a the name of a known user \n", parms[i]);
+                    printf("myfind: `%s` is not a  name of a known user \n", parms[i]);
                     exit(EXIT_FAILURE);
                 }
 
@@ -346,11 +344,12 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         * */
         if (parms[i][0] != '-') {
 
-            size_t l = strlen(parms[i])+1;
-            spath[index] = malloc(sizeof(char) * l);
+           // size_t l = strlen(parms[i])+1;
+           // spath[index] = malloc(sizeof(char) * l);
 
-            strcpy(spath[index], parms[i]);
-            spath[index][l + 1] = '\0';
+            //strcpy(spath[index], parms[i]);
+           // spath[index][l + 1] = '\0';
+            spath[index] = parms[i];
             index++;
 
 
