@@ -1,4 +1,3 @@
-
 #define _XOPEN_SOURCE 220112L
 #define _POSIX_C_SOURCE 200112L
 #define _GNU_SOURCE
@@ -132,11 +131,10 @@ int main(int argc, char *argv[]) {
 
 
     char *path_list[argc];
-    for (int j = 0; j < argc; ++j) {
-        path_list[j] = NULL;
-    }
 
-    s_optns *p = process_parms(argc, path_list, argv);
+
+    s_optns *p = NULL;
+    p = process_parms(argc, path_list, argv);
 
     //printf("Print is vidible here in main----->%d\n",p->next->print);
     if (p->help) {
@@ -233,13 +231,13 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
     //parms p = {0};        // to prevent uninitialise message
     //option vp = {0};
-    int index = 0, flag = 0;
+    int index = 0, flag = 0, i;
 
 
     s_optns *op = malloc(sizeof(*op));
     s_optns *first = op;
 
-    for (int i = 1; (i < len); ++i) {
+    for (i = 1; (i < len); ++i) {
 
         if (flag == 1) {
             //op = op->next;
@@ -427,7 +425,8 @@ void print_ls(const char *filename, const struct stat *sb) {
      * using snprntf to store the results in the required formatted output
      * put a null-terminator at the end of the char array
      * */
-    char *permstr = malloc(sizeof(char) * LEN);
+    char *permstr = alloca(sizeof(char) * LEN);
+    //char *permstr = malloc(sizeof(char) * LEN);
 
     snprintf(permstr, STR_SIZE, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb->st_mode & S_IRUSR) ? 'r' : '-',
              (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
@@ -454,7 +453,7 @@ void print_ls(const char *filename, const struct stat *sb) {
            ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
 
 
-    free(permstr);
+    //free(permstr);
     free(symlink);
 
 }
@@ -561,14 +560,14 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
     DIR *dir;
     struct dirent *e;
-    size_t len;
+    size_t len = 0;
     char *sl = "";
-    char *new_path;
+    char *new_path = NULL;
 
 
     if ((dir = opendir(dir_path)) == NULL) {
         fprintf(stderr, "myfind: opendir(%s): %s\n", dir_path, strerror(errno));
-        exit(EXIT_FAILURE);
+        return; //exit(EXIT_FAILURE);                                       /*go to the next dir*/
     }
 
     while ((e = readdir(dir)) != NULL) {
@@ -644,9 +643,6 @@ void clean_parms(s_optns **pm) {
     s_optns *first = *pm;
     while (first) {
         s_optns *temp = first->next;
-
-        //free(first->name),first->name = NULL;
-        //free(first->user),first->user = NULL;
         free(first);
         first = temp;
     }
