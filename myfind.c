@@ -503,7 +503,7 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 
 
-    printf("%7lu %8lld %10s %3d %-8s %-8s %8lu %12s  %s %s %s\n",
+    printf("%7lu %8lld %10s %3ld %-8s %-8s %8lu %12s  %s %s %s\n",
            sb->st_ino, nblks, permstr, sb->st_nlink,
            username, groupname, sb->st_size,
            ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
