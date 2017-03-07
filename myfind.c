@@ -12,11 +12,11 @@
  *
  * Beispiel 0
  *
- * @author Dennis Addo <ic16b026@technikum-wien.at>
- * @author Robert Niedermaier <ic16b089@technikum-wien.at>
+ * @author Dennis Addo <ic16b026>
+ * @author Robert Niedermaier <ic16b089>
  * @details More information about the project can be found here URL: https://cis.technikum-wien.at/documents/bic/2/bes/semesterplan/lu/beispiel1.html
  *
- * @date 15/02/2017
+ * @date 16/02/2017
  *
  * @version 0.1
  *
@@ -51,18 +51,24 @@
 #include <fnmatch.h>
 #include <assert.h>
 
-/*
+/**\def
  * --------------------------------------------------------------- defines --
  */
 #define STR_SIZE sizeof("?rwxrwxrwx")
 #define LEN 12
 #define ISSUE "Usage: myfind <file or directory> [ <options> ] ..."
 
-/*
+#define f_type(mode) if (S_ISBLK(mode)) { return 'b';} if (S_ISCHR(mode)) {return 'c';}\
+                        if (S_ISDIR(mode)) {return 'd';} if (S_ISFIFO(mode)) {return 'p';}\
+                        if (S_ISREG(mode)) {return 'f';} if (S_ISLNK(mode)) {return 'l';}\
+                        if (S_ISSOCK(mode)) {return 's';} return '?';
+
+/** \typedef
  * -------------------------------------------------------------- typedefs --
+ *
  */
 
-typedef struct _alopts {
+typedef struct ss_alopts {
     char *name;
     int help;
     int print;
@@ -70,7 +76,7 @@ typedef struct _alopts {
     int ls;
     char *user;                     //	<name>/<uid> expt: user name can be a number too
     unsigned long user_id;
-    struct _alopts *next;
+    struct ss_alopts *next;
 } s_optns;
 
 /*
@@ -81,11 +87,11 @@ typedef struct _alopts {
  * ------------------------------------------------------------- functions --
  * */
 
-void print_help(void);
+inline void print_help(void);
 
 void do_file(char *file_path, s_optns *parms, struct stat *atrr);
 
-void do_dir(char *dir_path, s_optns *parms, struct stat sb);
+void do_dir(char *dir_path, s_optns *parms, struct stat *sb);
 
 s_optns *process_parms(const int len, char *spath[], char **parms);
 
@@ -98,7 +104,7 @@ void print_ls(const char *file, const struct stat *atrr);
 void startMyFind(char **p, s_optns *option1);
 
 //int do_name(uid_t uid);
-char ftype(mode_t mode);
+inline char ftype(mode_t mode);
 
 void clean_parms(s_optns **pm);
 /*void clean_me(char **av){
@@ -156,7 +162,7 @@ int main(int argc, char *argv[]) {
  * when user specify -help for the program "myfind"
  * Default:displays for  inproper command options
  * */
-void print_help(void) {
+inline void print_help(void) {
     printf("Usage: myfind <file or directory> [ <options> ] ...\n"
                    "default path is the current directory if none is specified; default expression is -print\n"
                    "Options: (You can specify any of the following options)\n"
@@ -171,19 +177,20 @@ void print_help(void) {
 }
 
 
-/**\brief
+/**\brief this initialise the programm
+ * \param path this is the list of specified search paths/locations set to cwd if none is specified
+ * \param op this is the linkedlist of all passed command options
  * Documentation will come soon
  * this initialise the whole myfind command
  *
  *
  * */
-
-
 void startMyFind(char *path[], s_optns *op) {
 
     struct stat fattr;
     int ret = 0, i = 0;
     char cwd[] = "./";
+
     //char **p;
 
     //char **sSource = p;
@@ -197,14 +204,14 @@ void startMyFind(char *path[], s_optns *op) {
 
         ret = lstat(*path, &fattr);
         if (ret == -1) {
-            fprintf(stderr, "myfind: lstat(%s): %s\n", path[i], strerror(errno));
+            fprintf(stderr, "myfind: (%s): %s\n", path[i], strerror(errno));
             exit(EXIT_FAILURE);
         }
 
         do_file(path[i], op, &fattr);
 
         if (S_ISDIR(fattr.st_mode))
-            do_dir(path[i], op, fattr);
+            do_dir(path[i], op, &fattr);
 
         i++;
     }
@@ -214,30 +221,41 @@ void startMyFind(char *path[], s_optns *op) {
 
 
 /**
- * \brief This process all the passed in parameters from the *argv[]
- * and set status for the reqired parameters in the struct.
- * If in any case a wrong parameter is found EXIT_FAILURE otherwise continue to
- * the next parameter
+ * \brief This check all the given command line arguements and use a pointer to the correct options
+ *
+ * \param len this is the number of command argruements passed to myfind
+ * \param spath this is an array of pointers to save the list of search path specified by the user
+ * \param parms this is  the *argv[]
+ *
+ * We cannot garantee that the first command option will be the search path
+ * Flags isMemoryUsed is used to track the options of the commands.
+ * If memory has not been used for an option(isMemoryUsed ==0) which beginns with '-'
+ * then that can be the search path. otherwise (isMemoryUsed ==1) is not a correct command option.
+ *
+ * isOptions_set is used to limit or track the memory allocation for "linkedlist options"
+ * Memory is only allocated for the set valid parameter options
+ *
  * */
 
 s_optns *process_parms(const int len, char *spath[], char **parms) {
 
     //parms p = {0};        // to prevent uninitialise message
     //option vp = {0};
-    int index = 0, flag = 0, i,isOptset = 0;
+    int index = 0, isOptions_set = 0, i,isMemoryUsed = 0;
 
 
-    s_optns *op = malloc(sizeof(*op));   // use calloc instead of malloc or memset op to prevent errors from valgrind
+    /* use calloc or memset op to prevent errors from valgrind passing uninitialise value to syscall*/
+    s_optns *op = malloc(sizeof(*op));
     memset(op,0,sizeof(*op));
     s_optns *first = op;
 
     for (i = 1; (i < len); ++i) {
 
-        if (flag == 1) {
+        if (isOptions_set == 1) {
             //op = op->next;
             op->next = calloc(1, sizeof(*op));
             if (op->next == NULL) {
-                fprintf(stderr, "myfind: calloc(): %s\n", strerror(errno));
+                fprintf(stderr, "myfind: %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
             }
 
@@ -249,7 +267,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         if (strcmp(parms[i], "-name") == 0) {
             if (parms[++i]) {
                 op->name = parms[i];
-                flag = isOptset = 1;
+                isOptions_set = isMemoryUsed = 1;
                 continue;
             } else {
                 printf("myfind: missing argument to `%s`\n", parms[i - 1]);
@@ -259,18 +277,18 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         } else if (strcmp(parms[i], "-help") == 0) {
 
             op->help = 1;
-            flag = isOptset = 1;
+            isOptions_set = isMemoryUsed = 1;
             continue;
 
         } else if (strcmp(parms[i], "-print") == 0) {
             op->print = 1;
-            flag = isOptset = 1;
+            isOptions_set = isMemoryUsed = 1;
 
             continue;
 
         } else if (strcmp(parms[i], "-ls") == 0) {
             op->ls = 1;
-            flag = isOptset = 1;
+            isOptions_set = isMemoryUsed = 1;
             continue;
 
 
@@ -287,7 +305,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                 if (f == 'f' || f == 'b' || f == 'c' ||
                     f == 'd' || f == 's' || f == 'p' || f == 'l') {
                     op->f_type = f;
-                    flag = isOptset = 1;
+                    isOptions_set = isMemoryUsed = 1;
                     continue;
                 } else {
                     fprintf(stderr, "myfind: Unknown argument to %s: %c\n", parms[i - 1], *parms[i]);
@@ -307,7 +325,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
              * getpwnam return NULL if no match is found in the database
              * if no match is found then check if is a digit and extract it as user_id
              * otherwise report error and exit failure
-             * This check cases where in the passwd database a username is a number
+             * This also checks cases where the passwd database a username is a number
              * */
 
         if (strcmp(parms[i], "-user") == 0) {
@@ -317,11 +335,11 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                 op->user = parms[i];
                 if ((pd = getpwnam(op->user))) {
                     op->user_id = pd->pw_uid;
-                    flag = isOptset = 1;
+                    isOptions_set = isMemoryUsed = 1;
                     continue;
                 } else if (isdigit(parms[i][0])) {
                     sscanf(op->user, "%lu", &op->user_id);
-                    flag = isOptset = 1;
+                    isOptions_set = isMemoryUsed = 1;
                     continue;
                 } else {
                     printf("myfind: `%s` is not a  name of a known user \n", parms[i]);
@@ -337,21 +355,27 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             }
 
 
-        } else if(isOptset != 0){
+        } else if(isMemoryUsed != 0){
+
+            if(parms[i][0] == '-'){
+                printf("myfind: Unknown predicate `%s`\n", parms[i]);
+                exit(EXIT_FAILURE);
+            }
+
             fprintf(stderr,"%s\n"
                     "Run: myfind -help for more information\n",ISSUE);
             exit(EXIT_FAILURE);
 
 
         } else {
-            flag = 0;
+            isOptions_set = 0;
         }
 
 
 
         /*Getting the path here.
         * */
-        if (!isOptset && parms[i][0] != '-') {
+        if (!isMemoryUsed && parms[i][0] != '-') {
 
             // size_t l = strlen(parms[i])+1;
             // spath[index] = malloc(sizeof(char) * l);
@@ -377,15 +401,18 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 }
 
 
-/** \brief
- * emulating the -l in the linux command ls -l wth expected output format:
+/** \brief emulating the -l in the linux command ls -l wth expected output format:
  * -rwxr-xr-x. 1 root root 3756 Feb  5 20:18 filename.extension
+ * \param filename this is the path to apply -ls
+ * \param file attributes from the stat struct
  * putting everything in the main function here as one method.
  * */
 void print_ls(const char *filename, const struct stat *sb) {
 
     struct group *gp;
     struct passwd *pd;
+    char *username;
+    char *groupname;
     char ftpe;
 
     switch (sb->st_mode & S_IFMT) {
@@ -415,9 +442,24 @@ void print_ls(const char *filename, const struct stat *sb) {
     }
 
 
-    /*Getting the group details*/
+    /*Getting the groupname details*/
     gp = getgrgid(sb->st_gid);
     pd = getpwuid(sb->st_uid);
+    if(pd == NULL){
+        username = alloca(12);
+        snprintf(username,12,"%u",sb->st_uid);
+
+    } else{
+        username = pd->pw_name;
+    }
+
+
+    if(gp == NULL){
+        groupname = alloca(12);
+        snprintf(groupname,12,"%u",sb->st_gid);
+    } else{
+        groupname = gp->gr_name;
+    }
 
 
 
@@ -461,9 +503,9 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 
 
-    printf("%7lu %8lld %10s %3li %-8s %-8s %8lld %12s  %s %s %s\n",
+    printf("%7lu %8lld %10s %3d %-8s %-8s %8lu %12s  %s %s %s\n",
            sb->st_ino, nblks, permstr, sb->st_nlink,
-           pd->pw_name, gp->gr_name, (long long) sb->st_size,
+           username, groupname, sb->st_size,
            ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
 
 
@@ -472,8 +514,8 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 }
 
-/*The other macros is not working so i decided to use this macros*/
-char ftype(mode_t mode) {
+/*The other macros is not working so i decided to use this inline*/
+inline char ftype(mode_t mode) {
 
     if (S_ISBLK(mode)) {
         return 'b';
@@ -509,18 +551,18 @@ char ftype(mode_t mode) {
 
 void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
-    int flag = 0;
+    int isPrintOrls_set = 0;
 
     do {
         if (p->f_type) {
-            if (ftype(attr->st_mode) != p->f_type) { //todo: this works
+            if (ftype(attr->st_mode) != p->f_type) { //todo: it works
                 return;
             }
 
         }
 
         if (p->name) {
-            char *f = basename(file_path);   //todo: it works now
+            char *f = basename(file_path);   //todo: it works
 
             if (fnmatch(p->name, f, 0) != 0) {
                 return;
@@ -528,14 +570,20 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
         }
 
-        if (p->user) {                  //Todo: I have not tested yet
+        if (p->user) {                  //Todo: it works
+
+            #if 0
             struct passwd *pd;
             pd = getpwuid(attr->st_uid);
 
             if (strcmp(p->user, pd->pw_name) != 0) {
                 return;
 
-            } else if (p->user_id != attr->st_uid) {
+            } else
+
+            #endif
+
+            if (p->user_id != attr->st_uid) {
 
                 return;
 
@@ -543,12 +591,12 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
         }
         if (p->print) {                       //todo: works fine
             printf("%s\n", file_path);
-            flag = 1;
+            isPrintOrls_set = 1;
         }
 
         if (p->ls) {                        //todo:it works fine
             print_ls(file_path, attr);
-            flag = 1;
+            isPrintOrls_set = 1;
         }
 
 
@@ -557,7 +605,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
     } while (p != NULL);
 
 
-    if (flag == 0) {             //todo: i use it in case there is no parameter set, example find or myfind
+    if (isPrintOrls_set == 0) {             //todo: i use it in case there is no parameter set, example find or myfind
         printf("%s\n", file_path);
     }
 
@@ -571,13 +619,75 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * this is just to test my do_file, todo: robert is working on the final do_dir() version
  * for the file prject
  * */
-void do_dir(char *dir_path, s_optns *params, struct stat sb) {
-    
+void do_dir(char *dir_path, s_optns *params, struct stat *sb) {
+    DIR *dir;
+    struct dirent *e;
+    size_t len = 0;
+    char *sl = "";
+    char *new_path = NULL;
+
+
+    if ((dir = opendir(dir_path)) == NULL) {
+        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
+        return; //exit(EXIT_FAILURE);                                       /*go to the next dir*/
+    }
+
+    while ((e = readdir(dir)) != NULL) {
+        /* skipping all current directory and previous directory '.' and '..' */
+        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
+            continue;
+        }
+
+        len = strlen(dir_path);
+
+        if (dir_path[len - 1] != '/') {
+            sl = "/";
+        }
+
+        len += strlen(e->d_name) + 2;
+        new_path = alloca(sizeof(char) * len);        // testing if using stack memory will remove some overload on programm
+
+        if (!new_path) {
+            fprintf(stderr, "alloca: %s\n", strerror(errno));
+            break;
+        }
+
+        //snprintf(full_path, length, "%s%s%s", path, slash, entry->d_name)
+        snprintf(new_path, len, "%s%s%s", dir_path, sl, e->d_name);
+
+
+        if (lstat(new_path, &(*sb)) == 0) {
+
+            do_file(new_path, params, &(*sb));
+
+
+            if (S_ISDIR(sb->st_mode)) { // recursive call for all subdirs
+                //printf("dir--> %s\n",new_path);
+                do_dir(new_path, params, &(*sb));
+            }
+
+
+        } else {
+            fprintf(stderr, "myfind: (%s): %s\n", new_path, strerror(errno));
+            //free(new_path);
+            //new_path = NULL;
+            continue;
+        }
+
+        //free(new_path);
+        //new_path = NULL;
+    }
+
+    if (closedir(dir) != 0) {
+        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
 }
 
 
-/**\brief
+/**\brief this is to clean the linkedlist for the options
+ * \param pm a pointer to the address of the first struct
  * this is to clean the linkedlist for the options
  * full documentation will come soon
  *
@@ -603,9 +713,11 @@ void clean_parms(s_optns **pm) {
 
 }
 
-/** \brief
- * gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
+/** \brief  gathering informations about the target of the symbolic link and return them in the aproparate format of "find":
  * example of return string "-> boot/vmlinuz-4.4.0-64-generic"
+ *
+ *\param file_path this is the path to the linked_path
+ * \param attr the attributes of the given/ passed file_path
  * */
 char *get_smlink(const char *file_path, const struct stat *attr) {
 
@@ -625,6 +737,8 @@ char *get_smlink(const char *file_path, const struct stat *attr) {
             perror("malloc");
             exit(EXIT_FAILURE);
         }
+
+
 
 
         while ((r = readlink(file_path, sym_link, bufsiz)) > 1 && (r > bufsiz)) {
