@@ -54,7 +54,6 @@
 /**\def
  * --------------------------------------------------------------- defines --
  */
-#define STR_SIZE sizeof("?rwxrwxrwx")
 #define LEN 12
 #define ISSUE "Usage: myfind <file or directory> [ <options> ] ..."
 
@@ -484,16 +483,17 @@ void print_ls(const char *filename, const struct stat *sb) {
     char *permstr = alloca(sizeof(char) * LEN);
     //char *permstr = malloc(sizeof(char) * LEN);
 
-    snprintf(permstr, STR_SIZE, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb->st_mode & S_IRUSR) ? 'r' : '-',
-             (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
+    snprintf(permstr, LEN, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb->st_mode & S_IRUSR) ? 'r' : '-',
+    (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
                                                   (sb->st_mode & S_IXUSR ? 'x' : '-'),
 
-             (sb->st_mode && S_IRGRP) ? 'r' : '-', (sb->st_mode & S_IWGRP) ? 'w' : '-',
+             (sb->st_mode & S_IRGRP) ? 'r' : '-', (sb->st_mode & S_IWGRP) ? 'w' : '-',
              (sb->st_mode & S_ISGID) ? (sb->st_mode & S_IXGRP ? 's' : 'S') : (sb->st_mode & S_IXGRP ? 'x' : '-'),
+
              (sb->st_mode & S_IROTH) ? 'r' : '-', (sb->st_mode & S_IWOTH) ? 'w' : '-',
              (sb->st_mode & S_ISVTX) ? (sb->st_mode & S_IXOTH ? 't' : 'T') : (sb->st_mode & S_IXOTH ? 'x' : '-'));
 
-    permstr[LEN - 1] = '\0';
+
 
 
     char *symlink = get_smlink(filename, sb);
@@ -620,7 +620,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * for the file prject
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat *sb) {
-    
+   
 
 }
 
