@@ -638,69 +638,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * for the file prject
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
-    DIR *dir;
-    struct dirent *e;
-    size_t len = 0;
-    char *sl = "";
-    char *new_path = NULL;
-
-
-    if ((dir = opendir(dir_path)) == NULL) {
-        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
-        return; //exit(EXIT_FAILURE);                                       /*go to the next dir*/
-    }
-
-    while ((e = readdir(dir)) != NULL) {
-        /* skipping all current directory and previous directory '.' and '..' */
-        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
-            continue;
-        }
-
-        len = strlen(dir_path);
-
-        if (dir_path[len - 1] != '/') {
-            sl = "/";
-        }
-
-        len += strlen(e->d_name) + 2;
-        new_path = malloc(sizeof(char) * len);        // testing if using stack memory will remove some overload on programm
-
-        if (!new_path) {
-            fprintf(stderr, "alloca: %s\n", strerror(errno));
-            break;
-        }
-
-        //snprintf(full_path, length, "%s%s%s", path, slash, entry->d_name)
-        snprintf(new_path, len, "%s%s%s", dir_path, sl, e->d_name);
-
-
-        if (lstat(new_path, &sb) == 0) {
-
-            do_file(new_path, params, &sb);
-
-
-            if (S_ISDIR(sb.st_mode)) { // recursive call for all subdirs
-                //printf("dir--> %s\n",new_path);
-                // do_dir(new_path, params, &(*sb));
-                do_dir(new_path, params, sb);
-            }
-
-
-        } else {
-            fprintf(stderr, "myfind: (%s): %s\n", new_path, strerror(errno));
-            free(new_path);
-            new_path = NULL;
-            continue;
-        }
-
-        free(new_path);
-        new_path = NULL;
-    }
-
-    if (closedir(dir) != 0) {
-        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+   
 
 }
 
