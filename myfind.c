@@ -635,10 +635,11 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * example of test-output "inode number: [1587860]	-> file: [mail]"
  *
  * this is just to test my do_file, todo: robert is working on the final do_dir() version
- * for the file prject
+ * for the file prject. Please don't forget to make a pull request so that i can put the final
+ *  prodution method-body here. as for now i have my old one i implemented.
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
-   
+
 
 }
 
