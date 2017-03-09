@@ -90,7 +90,7 @@ inline void print_help(void);
 
 void do_file(char *file_path, s_optns *parms, struct stat *atrr);
 
-void do_dir(char *dir_path, s_optns *parms, struct stat *sb);
+void do_dir(char *dir_path, s_optns *parms, struct stat sb);
 
 s_optns *process_parms(const int len, char *spath[], char **parms);
 
@@ -103,7 +103,7 @@ void print_ls(const char *file, const struct stat *atrr);
 void startMyFind(char **p, s_optns *option1);
 
 //int do_name(uid_t uid);
-inline char ftype(mode_t mode);
+char ftype(mode_t mode);
 
 void clean_parms(s_optns **pm);
 /*void clean_me(char **av){
@@ -210,7 +210,7 @@ void startMyFind(char *path[], s_optns *op) {
         do_file(path[i], op, &fattr);
 
         if (S_ISDIR(fattr.st_mode))
-            do_dir(path[i], op, &fattr);
+            do_dir(path[i], op, fattr);
 
         i++;
     }
@@ -332,7 +332,13 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             struct passwd *pd;
             if (parms[++i]) {
                 op->user = parms[i];
-                if ((pd = getpwnam(op->user))) {
+                pd = getpwnam(op->user);
+//		if(pd == NULL) {
+                //printf("myfind: `%s` is not the name of a known user \n", parms[i]);
+                //                   fprintf(stderr,"myfind: %s\n",strerror(errno));
+                //                 exit(EXIT_FAILURE);
+                //          }
+                if (pd != NULL) {
                     op->user_id = pd->pw_uid;
                     isOptions_set = isMemoryUsed = 1;
                     continue;
@@ -340,8 +346,9 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                     sscanf(op->user, "%lu", &op->user_id);
                     isOptions_set = isMemoryUsed = 1;
                     continue;
-                } else {
-                    printf("myfind: `%s` is not a  name of a known user \n", parms[i]);
+                }else if(pd == NULL) {
+                    //printf("myfind: `%s` is not the name of a known user \n", parms[i]);
+                    fprintf(stderr,"myfind: %s\n",strerror(errno));
                     exit(EXIT_FAILURE);
                 }
 
@@ -408,10 +415,12 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
  * */
 void print_ls(const char *filename, const struct stat *sb) {
 
+
     struct group *gp;
     struct passwd *pd;
     char *username;
     char *groupname;
+
     char ftpe;
 
     switch (sb->st_mode & S_IFMT) {
@@ -441,9 +450,12 @@ void print_ls(const char *filename, const struct stat *sb) {
     }
 
 
-    /*Getting the groupname details*/
+//    printf("the uid passed is %u\n",sb->st_uid);
+
+    /*Getting the group details*/
     gp = getgrgid(sb->st_gid);
     pd = getpwuid(sb->st_uid);
+
     if(pd == NULL){
         username = alloca(12);
         snprintf(username,12,"%u",sb->st_uid);
@@ -459,7 +471,6 @@ void print_ls(const char *filename, const struct stat *sb) {
     } else{
         groupname = gp->gr_name;
     }
-
 
 
     /*Get a formated last modified date with ctime() in timesec format
@@ -480,11 +491,11 @@ void print_ls(const char *filename, const struct stat *sb) {
      * using snprntf to store the results in the required formatted output
      * put a null-terminator at the end of the char array
      * */
-    char *permstr = alloca(sizeof(char) * LEN);
-    //char *permstr = malloc(sizeof(char) * LEN);
+    //char *permstr = alloca(sizeof(char) * LEN);
+    char *permstr = malloc(sizeof(char) * LEN);
 
     snprintf(permstr, LEN, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb->st_mode & S_IRUSR) ? 'r' : '-',
-    (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
+             (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
                                                   (sb->st_mode & S_IXUSR ? 'x' : '-'),
 
              (sb->st_mode & S_IRGRP) ? 'r' : '-', (sb->st_mode & S_IWGRP) ? 'w' : '-',
@@ -493,7 +504,7 @@ void print_ls(const char *filename, const struct stat *sb) {
              (sb->st_mode & S_IROTH) ? 'r' : '-', (sb->st_mode & S_IWOTH) ? 'w' : '-',
              (sb->st_mode & S_ISVTX) ? (sb->st_mode & S_IXOTH ? 't' : 'T') : (sb->st_mode & S_IXOTH ? 'x' : '-'));
 
-
+//    permstr[LEN - 1] = '\0';
 
 
     char *symlink = get_smlink(filename, sb);
@@ -503,19 +514,31 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 
 
-    printf("%7lu %8lld %10s %3ld %-8s %-8s %8lu %12s  %s %s %s\n",
-           sb->st_ino, nblks, permstr, sb->st_nlink,
+    printf("%7lu %8lld %10s %3d %-8s %-8s %8lu %12s  %s %s %s\n",
+           sb->st_ino, nblks, permstr,sb->st_nlink,
            username, groupname, sb->st_size,
            ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
-
-
-    //free(permstr);
+#if 0
+    printf("1. %7lu\n",sb->st_ino);
+	printf("1. %8lld\n",nblks);
+	printf("1. %810s\n",permstr);
+	printf("1. %3d\n",sb->st_nlink);
+	printf("1. %-8s\n",pd->pw_name);//
+	printf("1. %-8s\n",gp->gr_name);
+	printf("1. %-8lu\n",sb->st_size);
+	printf("1. %12s\n",ntime);
+	printf("1. %s\n",filename);
+	printf("1. %s\n",(symlink)?"->":"");
+	printf("1. %s\n",(symlink)?symlink:"");
+#endif
+    free(permstr);
     free(symlink);
 
 }
 
 /*The other macros is not working so i decided to use this inline*/
-inline char ftype(mode_t mode) {
+
+char ftype(mode_t mode) {
 
     if (S_ISBLK(mode)) {
         return 'b';
@@ -571,18 +594,13 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
         }
 
         if (p->user) {                  //Todo: it works
+//            struct passwd *pd;
+            //          pd = getpwuid(attr->st_uid);
 
-            #if 0
-            struct passwd *pd;
-            pd = getpwuid(attr->st_uid);
+            //       if (strcmp(p->user, pd->pw_name) != 0) {
+            //          return;
 
-            if (strcmp(p->user, pd->pw_name) != 0) {
-                return;
-
-            } else
-
-            #endif
-
+            //    }
             if (p->user_id != attr->st_uid) {
 
                 return;
@@ -619,8 +637,70 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * this is just to test my do_file, todo: robert is working on the final do_dir() version
  * for the file prject
  * */
-void do_dir(char *dir_path, s_optns *params, struct stat *sb) {
-   
+void do_dir(char *dir_path, s_optns *params, struct stat sb) {
+    DIR *dir;
+    struct dirent *e;
+    size_t len = 0;
+    char *sl = "";
+    char *new_path = NULL;
+
+
+    if ((dir = opendir(dir_path)) == NULL) {
+        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
+        return; //exit(EXIT_FAILURE);                                       /*go to the next dir*/
+    }
+
+    while ((e = readdir(dir)) != NULL) {
+        /* skipping all current directory and previous directory '.' and '..' */
+        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
+            continue;
+        }
+
+        len = strlen(dir_path);
+
+        if (dir_path[len - 1] != '/') {
+            sl = "/";
+        }
+
+        len += strlen(e->d_name) + 2;
+        new_path = malloc(sizeof(char) * len);        // testing if using stack memory will remove some overload on programm
+
+        if (!new_path) {
+            fprintf(stderr, "alloca: %s\n", strerror(errno));
+            break;
+        }
+
+        //snprintf(full_path, length, "%s%s%s", path, slash, entry->d_name)
+        snprintf(new_path, len, "%s%s%s", dir_path, sl, e->d_name);
+
+
+        if (lstat(new_path, &sb) == 0) {
+
+            do_file(new_path, params, &sb);
+
+
+            if (S_ISDIR(sb.st_mode)) { // recursive call for all subdirs
+                //printf("dir--> %s\n",new_path);
+                // do_dir(new_path, params, &(*sb));
+                do_dir(new_path, params, sb);
+            }
+
+
+        } else {
+            fprintf(stderr, "myfind: (%s): %s\n", new_path, strerror(errno));
+            free(new_path);
+            new_path = NULL;
+            continue;
+        }
+
+        free(new_path);
+        new_path = NULL;
+    }
+
+    if (closedir(dir) != 0) {
+        fprintf(stderr, "myfind: (%s): %s\n", dir_path, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -703,4 +783,3 @@ char *get_smlink(const char *file_path, const struct stat *attr) {
     return NULL;
 
 }
-
