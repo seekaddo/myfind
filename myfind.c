@@ -301,8 +301,10 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
 
                 char f = *(parms[i]);
 
-                if (f == 'f' || f == 'b' || f == 'c' ||
-                    f == 'd' || f == 's' || f == 'p' || f == 'l') {
+                if (f == 'f' || f == 'b' || f == 'c'
+                    || f == 'd' || f == 's' || f == 'p'
+                    || f == 'l') {
+
                     op->f_type = f;
                     isOptions_set = isMemoryUsed = 1;
                     continue;
@@ -424,27 +426,13 @@ void print_ls(const char *filename, const struct stat *sb) {
     char ftpe;
 
     switch (sb->st_mode & S_IFMT) {
-        case S_IFREG:
-            ftpe = '-';
-            break;
-        case S_IFDIR:
-            ftpe = 'd';
-            break;
-        case S_IFBLK:
-            ftpe = 'b';
-            break;
-        case S_IFCHR:
-            ftpe = 'c';
-            break;
-        case S_IFIFO:
-            ftpe = 'p';
-            break;
-        case S_IFLNK:
-            ftpe = 'l';
-            break;
-        case S_IFSOCK:
-            ftpe = 's';
-            break;
+        case S_IFREG:  ftpe = '-'; break;
+        case S_IFDIR:  ftpe = 'd'; break;
+        case S_IFBLK:  ftpe = 'b'; break;
+        case S_IFCHR:  ftpe = 'c'; break;
+        case S_IFIFO:  ftpe = 'p'; break;
+        case S_IFLNK:  ftpe = 'l'; break;
+        case S_IFSOCK: ftpe = 's'; break;
         default:
             ftpe = '?';
     }
@@ -491,18 +479,25 @@ void print_ls(const char *filename, const struct stat *sb) {
      * using snprntf to store the results in the required formatted output
      * put a null-terminator at the end of the char array
      * */
-    //char *permstr = alloca(sizeof(char) * LEN);
-    char *permstr = malloc(sizeof(char) * LEN);
+    char *permstr = alloca(sizeof(char) * LEN);
+    // char *permstr = malloc(sizeof(char) * LEN);
 
-    snprintf(permstr, LEN, "%c%c%c%c%c%c%c%c%c%c", ftpe, (sb->st_mode & S_IRUSR) ? 'r' : '-',
-             (sb->st_mode & S_IWUSR) ? 'w' : '-', (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
-                                                  (sb->st_mode & S_IXUSR ? 'x' : '-'),
+    snprintf(permstr, LEN, "%c%c%c%c%c%c%c%c%c%c", ftpe,
+             (sb->st_mode & S_IRUSR) ? 'r' : '-',
+             (sb->st_mode & S_IWUSR) ? 'w' : '-',
+             (sb->st_mode & S_ISUID) ? (sb->st_mode & S_IXUSR ? 's' : 'S') :
+             (sb->st_mode & S_IXUSR ? 'x' : '-'),
 
-             (sb->st_mode & S_IRGRP) ? 'r' : '-', (sb->st_mode & S_IWGRP) ? 'w' : '-',
-             (sb->st_mode & S_ISGID) ? (sb->st_mode & S_IXGRP ? 's' : 'S') : (sb->st_mode & S_IXGRP ? 'x' : '-'),
+             (sb->st_mode & S_IRGRP) ? 'r' : '-',
+             (sb->st_mode & S_IWGRP) ? 'w' : '-',
+             (sb->st_mode & S_ISGID) ? (sb->st_mode & S_IXGRP ? 's' : 'S') :
+             (sb->st_mode & S_IXGRP ? 'x' : '-'),
 
-             (sb->st_mode & S_IROTH) ? 'r' : '-', (sb->st_mode & S_IWOTH) ? 'w' : '-',
-             (sb->st_mode & S_ISVTX) ? (sb->st_mode & S_IXOTH ? 't' : 'T') : (sb->st_mode & S_IXOTH ? 'x' : '-'));
+             (sb->st_mode & S_IROTH) ? 'r' : '-',
+             (sb->st_mode & S_IWOTH) ? 'w' : '-',
+             (sb->st_mode & S_ISVTX) ? (sb->st_mode & S_IXOTH ? 't' : 'T') :
+             (sb->st_mode & S_IXOTH ? 'x' : '-')
+    );
 
 //    permstr[LEN - 1] = '\0';
 
@@ -517,7 +512,9 @@ void print_ls(const char *filename, const struct stat *sb) {
     printf("%7lu %8lld %10s %3d %-8s %-8s %8lu %12s  %s %s %s\n",
            sb->st_ino, nblks, permstr,sb->st_nlink,
            username, groupname, sb->st_size,
-           ntime, filename, (symlink ? "->" : ""), (symlink ? symlink : ""));
+           ntime, filename, (symlink ? "->" : ""),
+           (symlink ? symlink : "")
+    );
 #if 0
     printf("1. %7lu\n",sb->st_ino);
 	printf("1. %8lld\n",nblks);
@@ -531,7 +528,7 @@ void print_ls(const char *filename, const struct stat *sb) {
 	printf("1. %s\n",(symlink)?"->":"");
 	printf("1. %s\n",(symlink)?symlink:"");
 #endif
-    free(permstr);
+    // free(permstr);
     free(symlink);
 
 }
@@ -635,11 +632,10 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * example of test-output "inode number: [1587860]	-> file: [mail]"
  *
  * this is just to test my do_file, todo: robert is working on the final do_dir() version
- * for the file prject. Please don't forget to make a pull request so that i can put the final
- *  prodution method-body here. as for now i have my old one i implemented.
+ * for the file prject
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
-
+    
 
 }
 
