@@ -201,22 +201,24 @@ void startMyFind(char *path[], s_optns *op) {
 
     while (path[i]) {
 
-        ret = lstat(*path, &fattr);
+        ret = lstat(path[i], &fattr);
         if (ret == -1) {
             fprintf(stderr, "myfind: (%s): %s\n", path[i], strerror(errno));
-            exit(EXIT_FAILURE);
+            //  i++; is alright to fail for one or many paths given, but is not ok for you to stop there, report the error and continue buddy
+        }else{
+
+            do_file(path[i], op, &fattr);
+
+            if (S_ISDIR(fattr.st_mode))
+                do_dir(path[i], op, fattr);
+
         }
-
-        do_file(path[i], op, &fattr);
-
-        if (S_ISDIR(fattr.st_mode))
-            do_dir(path[i], op, fattr);
-
         i++;
     }
 
 
 }
+
 
 
 /**
@@ -635,6 +637,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * for the file prject
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
+
     
 
 }
