@@ -57,10 +57,6 @@
 #define LEN 12
 #define ISSUE "Usage: myfind <file or directory> [ <options> ] ..."
 
-#define f_type(mode) if (S_ISBLK(mode)) { return 'b';} if (S_ISCHR(mode)) {return 'c';}\
-                        if (S_ISDIR(mode)) {return 'd';} if (S_ISFIFO(mode)) {return 'p';}\
-                        if (S_ISREG(mode)) {return 'f';} if (S_ISLNK(mode)) {return 'l';}\
-                        if (S_ISSOCK(mode)) {return 's';} return '?';
 
 /** \typedef
  * -------------------------------------------------------------- typedefs --
@@ -98,23 +94,12 @@ char *get_smlink(const char *file_path, const struct stat *attr);
 
 void print_ls(const char *file, const struct stat *atrr);
 
-//int do_type(mode_t mode);
 
 void startMyFind(char **p, s_optns *option1);
 
-//int do_name(uid_t uid);
 char ftype(mode_t mode);
 
 void clean_parms(s_optns **pm);
-/*void clean_me(char **av){
-    int i =0;
-
-    while(av[i]){
-        assert(av[i] != NULL);
-        free(av[i]);
-        i++;
-    }
-}*/
 
 
 /**
@@ -136,13 +121,13 @@ int main(int argc, char *argv[]) {
 
 
     char *path_list[argc];
-    memset(path_list,0,argc);   // this is to prevent errors from valgrind
+    memset(path_list, 0, argc);   // this is to prevent errors from valgrind
 
 
     s_optns *p = NULL;
     p = process_parms(argc, path_list, argv);
 
-    //printf("Print is vidible here in main----->%d\n",p->next->print);
+
     if (p->help) {
         print_help();
         clean_parms(&p);
@@ -190,9 +175,6 @@ void startMyFind(char *path[], s_optns *op) {
     int ret = 0, i = 0;
     char cwd[] = "./";
 
-    //char **p;
-
-    //char **sSource = p;
     if (path[i] == NULL) {
         path[i] = cwd;
         path[i + 1] = NULL;
@@ -204,8 +186,8 @@ void startMyFind(char *path[], s_optns *op) {
         ret = lstat(path[i], &fattr);
         if (ret == -1) {
             fprintf(stderr, "myfind: (%s): %s\n", path[i], strerror(errno));
-            //  i++; is alright to fail for one or many paths given, but is not ok for you to stop there, report the error and continue buddy
-        }else{
+            //  Is alright to fail for one or many paths given, but is not ok for you to stop there, report the error and continue buddy
+        } else {
 
             do_file(path[i], op, &fattr);
 
@@ -218,7 +200,6 @@ void startMyFind(char *path[], s_optns *op) {
 
 
 }
-
 
 
 /**
@@ -240,14 +221,12 @@ void startMyFind(char *path[], s_optns *op) {
 
 s_optns *process_parms(const int len, char *spath[], char **parms) {
 
-    //parms p = {0};        // to prevent uninitialise message
-    //option vp = {0};
-    int index = 0, isOptions_set = 0, i,isMemoryUsed = 0;
+    int index = 0, isOptions_set = 0, i, isMemoryUsed = 0;
 
 
-    /* use calloc or memset op to prevent errors from valgrind passing uninitialise value to syscall*/
     s_optns *op = malloc(sizeof(*op));
-    memset(op,0,sizeof(*op));
+    memset(op, 0, sizeof(*op));
+
     s_optns *first = op;
 
     for (i = 1; (i < len); ++i) {
@@ -337,11 +316,7 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             if (parms[++i]) {
                 op->user = parms[i];
                 pd = getpwnam(op->user);
-//		if(pd == NULL) {
-                //printf("myfind: `%s` is not the name of a known user \n", parms[i]);
-                //                   fprintf(stderr,"myfind: %s\n",strerror(errno));
-                //                 exit(EXIT_FAILURE);
-                //          }
+
                 if (pd != NULL) {
                     op->user_id = pd->pw_uid;
                     isOptions_set = isMemoryUsed = 1;
@@ -350,9 +325,9 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
                     sscanf(op->user, "%lu", &op->user_id);
                     isOptions_set = isMemoryUsed = 1;
                     continue;
-                }else if(pd == NULL) {
-                    //printf("myfind: `%s` is not the name of a known user \n", parms[i]);
-                    fprintf(stderr,"myfind: %s\n",strerror(errno));
+                } else if (pd == NULL) {
+
+                    fprintf(stderr, "myfind: %s\n", strerror(errno));
                     exit(EXIT_FAILURE);
                 }
 
@@ -365,15 +340,15 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
             }
 
 
-        } else if(isMemoryUsed != 0){
+        } else if (isMemoryUsed != 0) {
 
-            if(parms[i][0] == '-'){
+            if (parms[i][0] == '-') {
                 printf("myfind: Unknown predicate `%s`\n", parms[i]);
                 exit(EXIT_FAILURE);
             }
 
-            fprintf(stderr,"%s\n"
-                    "Run: myfind -help for more information\n",ISSUE);
+            fprintf(stderr, "%s\n"
+                    "Run: myfind -help for more information\n", ISSUE);
             exit(EXIT_FAILURE);
 
 
@@ -382,23 +357,13 @@ s_optns *process_parms(const int len, char *spath[], char **parms) {
         }
 
 
-
-        /*Getting the path here.
-        * */
         if (!isMemoryUsed && parms[i][0] != '-') {
-
-            // size_t l = strlen(parms[i])+1;
-            // spath[index] = malloc(sizeof(char) * l);
-
-            //strcpy(spath[index], parms[i]);
-            // spath[index][l + 1] = '\0';
             spath[index] = parms[i];
             index++;
 
 
         } else {
             printf("myfind: Unknown predicate `%s`\n", parms[i]);
-            //docs/ doc1/ doc2/ -ls -type m -user james
             exit(EXIT_FAILURE);
 
         }
@@ -428,37 +393,47 @@ void print_ls(const char *filename, const struct stat *sb) {
     char ftpe;
 
     switch (sb->st_mode & S_IFMT) {
-        case S_IFREG:  ftpe = '-'; break;
-        case S_IFDIR:  ftpe = 'd'; break;
-        case S_IFBLK:  ftpe = 'b'; break;
-        case S_IFCHR:  ftpe = 'c'; break;
-        case S_IFIFO:  ftpe = 'p'; break;
-        case S_IFLNK:  ftpe = 'l'; break;
-        case S_IFSOCK: ftpe = 's'; break;
+        case S_IFREG:
+            ftpe = '-';
+            break;
+        case S_IFDIR:
+            ftpe = 'd';
+            break;
+        case S_IFBLK:
+            ftpe = 'b';
+            break;
+        case S_IFCHR:
+            ftpe = 'c';
+            break;
+        case S_IFIFO:
+            ftpe = 'p';
+            break;
+        case S_IFLNK:
+            ftpe = 'l';
+            break;
+        case S_IFSOCK:
+            ftpe = 's';
+            break;
         default:
             ftpe = '?';
     }
 
-
-//    printf("the uid passed is %u\n",sb->st_uid);
-
-    /*Getting the group details*/
     gp = getgrgid(sb->st_gid);
     pd = getpwuid(sb->st_uid);
 
-    if(pd == NULL){
+    if (pd == NULL) {
         username = alloca(12);
-        snprintf(username,12,"%u",sb->st_uid);
+        snprintf(username, 12, "%u", sb->st_uid);
 
-    } else{
+    } else {
         username = pd->pw_name;
     }
 
 
-    if(gp == NULL){
+    if (gp == NULL) {
         groupname = alloca(12);
-        snprintf(groupname,12,"%u",sb->st_gid);
-    } else{
+        snprintf(groupname, 12, "%u", sb->st_gid);
+    } else {
         groupname = gp->gr_name;
     }
 
@@ -501,34 +476,30 @@ void print_ls(const char *filename, const struct stat *sb) {
              (sb->st_mode & S_IXOTH ? 'x' : '-')
     );
 
-//    permstr[LEN - 1] = '\0';
-
 
     char *symlink = get_smlink(filename, sb);
 
-    long long nblks = S_ISLNK(sb->st_mode) ? 0 : sb->st_blocks / 2; //find show half the blocks
-
-
+    long long nblks = S_ISLNK(sb->st_mode) ? 0 : sb->st_blocks / 2;
 
 
     printf("%7lu %8lld %10s %3d %-8s %-8s %8lu %12s  %s %s %s\n",
-           sb->st_ino, nblks, permstr,sb->st_nlink,
+           sb->st_ino, nblks, permstr, sb->st_nlink,
            username, groupname, sb->st_size,
            ntime, filename, (symlink ? "->" : ""),
            (symlink ? symlink : "")
     );
 #if 0
     printf("1. %7lu\n",sb->st_ino);
-	printf("1. %8lld\n",nblks);
-	printf("1. %810s\n",permstr);
-	printf("1. %3d\n",sb->st_nlink);
-	printf("1. %-8s\n",pd->pw_name);//
-	printf("1. %-8s\n",gp->gr_name);
-	printf("1. %-8lu\n",sb->st_size);
-	printf("1. %12s\n",ntime);
-	printf("1. %s\n",filename);
-	printf("1. %s\n",(symlink)?"->":"");
-	printf("1. %s\n",(symlink)?symlink:"");
+    printf("1. %8lld\n",nblks);
+    printf("1. %810s\n",permstr);
+    printf("1. %3d\n",sb->st_nlink);
+    printf("1. %-8s\n",pd->pw_name);//
+    printf("1. %-8s\n",gp->gr_name);
+    printf("1. %-8lu\n",sb->st_size);
+    printf("1. %12s\n",ntime);
+    printf("1. %s\n",filename);
+    printf("1. %s\n",(symlink)?"->":"");
+    printf("1. %s\n",(symlink)?symlink:"");
 #endif
     // free(permstr);
     free(symlink);
@@ -577,14 +548,14 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
     do {
         if (p->f_type) {
-            if (ftype(attr->st_mode) != p->f_type) { //todo: it works
+            if (ftype(attr->st_mode) != p->f_type) {
                 return;
             }
 
         }
 
         if (p->name) {
-            char *f = basename(file_path);   //todo: it works
+            char *f = basename(file_path);
 
             if (fnmatch(p->name, f, 0) != 0) {
                 return;
@@ -592,26 +563,20 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
         }
 
-        if (p->user) {                  //Todo: it works
-//            struct passwd *pd;
-            //          pd = getpwuid(attr->st_uid);
+        if (p->user) {
 
-            //       if (strcmp(p->user, pd->pw_name) != 0) {
-            //          return;
-
-            //    }
             if (p->user_id != attr->st_uid) {
 
                 return;
 
             }
         }
-        if (p->print) {                       //todo: works fine
+        if (p->print) {
             printf("%s\n", file_path);
             isPrintOrls_set = 1;
         }
 
-        if (p->ls) {                        //todo:it works fine
+        if (p->ls) {
             print_ls(file_path, attr);
             isPrintOrls_set = 1;
         }
@@ -622,7 +587,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
     } while (p != NULL);
 
 
-    if (isPrintOrls_set == 0) {             //todo: i use it in case there is no parameter set, example find or myfind
+    if (isPrintOrls_set == 0) {
         printf("%s\n", file_path);
     }
 
@@ -638,7 +603,6 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * */
 void do_dir(char *dir_path, s_optns *params, struct stat sb) {
 
-    
 
 }
 
@@ -694,8 +658,6 @@ char *get_smlink(const char *file_path, const struct stat *attr) {
             perror("malloc");
             exit(EXIT_FAILURE);
         }
-
-
 
 
         while ((r = readlink(file_path, sym_link, bufsiz)) > 1 && (r > bufsiz)) {
