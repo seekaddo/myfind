@@ -85,9 +85,9 @@ typedef struct ss_alopts {
 
 inline void print_help(void);
 
-void do_file(char *file_path, s_optns *parms, struct stat *atrr);
+void do_file(char *fp_path, s_optns *parms, struct stat *atrr);
 
-void do_dir(char *dir_path, s_optns *parms, struct stat sb);
+void do_dir(char *dp_path, s_optns *parms, struct stat sb);
 
 s_optns *process_parms(const int len, char *spath[], char **parms);
 
@@ -486,7 +486,10 @@ void print_ls(const char *filename, const struct stat *sb) {
 
 }
 
-/*The other macros is not working so i decided to use this inline*/
+/**
+ * \brief The other macros is not working so i decided to use this inline
+ * \param mode the file mode from the struct stat
+ * */
 
 char ftype(mode_t mode) {
 
@@ -508,14 +511,15 @@ char ftype(mode_t mode) {
 }
 
 
-/**
- * Checking all the specified options against each passed directory or file
+/**\brief Checking all the specified options against each passed directory or file
  * The idea is simple, options are checked against the file_path using the attributes if it pass
  * we move to the next option in the linked-list if it fails then we can't continue
  * if one of the options fails then we move on to the next file by returning void
+ * \param fp_path a pointer to the specified or passed in search file or given path to
+ * test the list of options on.
  * */
 
-void do_file(char *file_path, s_optns *p, struct stat *attr) {
+void do_file(char *fp_path, s_optns *p, struct stat *attr) {
 
     int isPrintOrls_set = 0;
 
@@ -528,7 +532,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
         }
 
         if (p->name) {
-            char *f = basename(file_path);
+            char *f = basename(fp_path);
 
             if (fnmatch(p->name, f, 0) != 0)
                 return;
@@ -544,12 +548,12 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
         }
         if (p->print) {
-            printf("%s\n", file_path);
+            printf("%s\n", fp_path);
             isPrintOrls_set = 1;
         }
 
         if (p->ls) {
-            print_ls(file_path, attr);
+            print_ls(fp_path, attr);
             isPrintOrls_set = 1;
         }
 
@@ -560,14 +564,14 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
 
 
     if (isPrintOrls_set == 0)
-        printf("%s\n", file_path);
+        printf("%s\n", fp_path);
 
 
 }
 
 /** \brief
  * main task of this function is to gather informations about the given directory and process them:
- *\param dir_path the given directory to open a stream on
+ *\param dp_path the given directory to open a stream on
  * \param params a linked-list of all the specified options
  * \param sb the attributes of the passed dir_path
  * it is called once in main and processes the by commandline given object
@@ -579,7 +583,7 @@ void do_file(char *file_path, s_optns *p, struct stat *attr) {
  * and calls recursivly do_dir() after do_file() if an directory found, else it only calls do_file()
  **/
 
-void do_dir(char *dir_path, s_optns *params, struct stat sb) {
+void do_dir(char *dp_path, s_optns *params, struct stat sb) {
 
     DIR *dirp;
     struct dirent *dire;
@@ -587,9 +591,9 @@ void do_dir(char *dir_path, s_optns *params, struct stat sb) {
 
 
     errno = 0;
-    dirp = opendir(dir_path);
+    dirp = opendir(dp_path);
     if (dirp == NULL) {
-        fprintf(stderr, "myfind:%s %s\n", dir_path,strerror(errno));
+        fprintf(stderr, "myfind:%s %s\n", dp_path,strerror(errno));
         return;
     }
 
@@ -600,13 +604,13 @@ void do_dir(char *dir_path, s_optns *params, struct stat sb) {
             continue;
 
 
-        unsigned long pfadlaenge = strlen(dir_path) + strlen(dire->d_name);
+        unsigned long pfadlaenge = strlen(dp_path) + strlen(dire->d_name);
         char pfad[pfadlaenge];
 
-        if (dir_path[strlen(dir_path) - 1] == '/')
-            sprintf(pfad, "%s%s", dir_path, dire->d_name);
+        if (dp_path[strlen(dp_path) - 1] == '/')
+            sprintf(pfad, "%s%s", dp_path, dire->d_name);
         else
-            sprintf(pfad, "%s/%s", dir_path, dire->d_name);
+            sprintf(pfad, "%s/%s", dp_path, dire->d_name);
 
 
         ret = lstat(pfad, &sb);
@@ -625,7 +629,7 @@ void do_dir(char *dir_path, s_optns *params, struct stat sb) {
     }
 
     if (closedir(dirp) == -1) {
-        fprintf(stderr, "myfind: %s %s \n", dir_path,strerror(errno));
+        fprintf(stderr, "myfind: %s %s \n", dp_path,strerror(errno));
         exit(EXIT_FAILURE);
     }
 
